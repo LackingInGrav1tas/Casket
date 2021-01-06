@@ -1,8 +1,14 @@
+#ifndef VM_HPP
+#define VM_HPP
+
 #include "opcode.hpp"
 #include "memory.hpp"
+#include "error.hpp"
+#include "lexertk.hpp"
 
 #include <stack>
 #include <iostream>
+#include <functional>
 
 typedef std::map<std::string, size_t> Scope;
 
@@ -12,9 +18,26 @@ struct Machine {
     std::stack<Value> stack;
     size_t ip;
 
-    void init(std::vector<OpcodeObject> op) {
+    void init_og(std::vector<OpcodeObject> op) {
         opcode = op;
         ip = 0;
+    }
+    
+    void init(lexertk::generator gen);
+
+    void disassemble() {
+        #define OP opcode[i]
+        for (int i = 0; i < opcode.size(); i++) {
+            std::cout << i << ": ";
+            if (OP.op == OP_CONSTANT) {
+                std::cout << "OP_CONSTANT(" << OP.value.toString() << ")";
+            } else if (OP.op == OP_PRINT_POP) {
+                std::cout << "OP_PRINT_POP";
+            } else if (OP.op == OP_NEGATE) {
+                std::cout << "OP_NEGATE";
+            }
+            std::cout << std::endl;
+        }
     }
 
     Value run() {
@@ -22,6 +45,31 @@ struct Machine {
         #define SIDES() Value rhs = stack.top(); stack.pop(); Value lhs = stack.top(); stack.pop()
         #define INSTRUCTION opcode[ip]
         #define OP INSTRUCTION.op
+
+        #define BASIC_OPERATION(operator) \
+do { \
+    SIDES(); \
+    if (lhs.type == FLOAT) { \
+        if (rhs.type == FLOAT) { \
+            stack.push(floatValue( lhs.getFloat() - rhs.getFloat() )); \
+        } else if (rhs.type == INTIGER) { \
+            stack.push(floatValue( lhs.getFloat() - rhs.getInt() )); \
+        } else { \
+            rhs.error("invalid type for operation"); \
+        } \
+    } else if (lhs.type == INTIGER) { \
+        if (rhs.type == FLOAT) { \
+            stack.push(floatValue( lhs.getInt() - rhs.getFloat() )); \
+        } else if (rhs.type == INTIGER) { \
+            stack.push(intValue( lhs.getInt() - rhs.getInt() )); \
+        } else { \
+            rhs.error("invalid type for operation"); \
+        } \
+    } else { \
+        lhs.error("invalid type for operation"); \
+    } \
+} while (0)
+
         for (; ip < opcode.size(); ip++) {
             if (OP == OP_CONSTANT) {
                 stack.push(INSTRUCTION.value);
@@ -49,7 +97,7 @@ struct Machine {
                         stack.push(ptrValue(it->second));
                     }
                 }
-                if (!found) exit(1); // error
+                if (!found) top.error("identifier is not in scope");
             } else if (OP == OP_DEREFERENCE) {
                 // stack order: ptr
                 // notation: *ptr
@@ -57,11 +105,55 @@ struct Machine {
                 stack.push(heap.get(top.getPtr()));
 
 
-
             } else if (OP == OP_BEGIN_SCOPE) {
                 scopes.push_back(std::map<std::string, size_t>());
             } else if (OP == OP_END_SCOPE) {
                 scopes.pop_back();
+
+
+            } else if (OP == OP_ADD) {
+                BASIC_OPERATION(+);
+            } else if (OP == OP_SUBTRACT) {
+                BASIC_OPERATION(-);
+            } else if (OP == OP_MULTIPLY) {
+                BASIC_OPERATION(*);
+            } else if (OP == OP_MODULO) {
+                BASIC_OPERATION(%);
+            } else if (OP == OP_DIVIDE) {
+                SIDES();
+                if (lhs.type == FLOAT) {
+                    if (rhs.type == FLOAT) {
+                        stack.push(floatValue( lhs.getFloat() / rhs.getFloat() ));
+                    } else if (rhs.type == INTIGER) {
+                        stack.push(floatValue( lhs.getFloat() / rhs.getInt() ));
+                    } else {
+                        rhs.error("invalid type for operation"); 
+                    }
+                } else if (lhs.type == INTIGER) {
+                    if (rhs.type == FLOAT) {
+                        stack.push(floatValue( lhs.getInt() / rhs.getFloat() ));
+                    } else if (rhs.type == INTIGER) {
+                        stack.push(floatValue( lhs.getInt() / rhs.getInt() ));
+                    } else {
+                        rhs.error("invalid type for operation"); 
+                    }
+                } else {
+                    lhs.error("invalid type for operation"); 
+                }
+            } else if (OP == OP_NEGATE) {
+                TOP();
+                if (top.type == INTIGER) stack.push(intValue(-top.getInt()));
+                else if (top.type == FLOAT) stack.push(floatValue(-top.getFloat()));
+                else top.error("invalid type for operation");
+            } else if (OP == OP_NOT) {
+                TOP();
+                stack.push(boolValue(!top.getBool()));
+            } else if (OP == OP_AND) {
+                SIDES();
+                stack.push(boolValue( lhs.getBool() && rhs.getBool() ));
+            } else if (OP == OP_OR) {
+                SIDES();
+                stack.push(boolValue( lhs.getBool() || rhs.getBool() ));
 
 
             } else if (OP == OP_PRINT_POP) {
@@ -82,3 +174,5 @@ struct Machine {
     }
 
 };
+
+#endif

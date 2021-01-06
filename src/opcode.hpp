@@ -1,3 +1,6 @@
+#ifndef OPCODE_HPP
+#define OPCODE_HPP
+
 #include "value.hpp"
 
 #include <string>
@@ -8,11 +11,14 @@ enum Opcode {
     
     OP_CONSTANT,
 
-    OP_PLUS,
-    OP_MINUS,
+    OP_ADD,
+    OP_SUBTRACT,
     OP_MULTIPLY,
     OP_DIVIDE,
     OP_MODULO,
+
+    OP_NEGATE,
+    OP_NOT,
     
     OP_AND,
     OP_OR,
@@ -63,3 +69,5 @@ OpcodeObject OpConstant(Value v) {
     o.value = v;
     return o;
 }
+
+#endif

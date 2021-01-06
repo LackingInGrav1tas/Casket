@@ -2,6 +2,7 @@
 #define VALUE_HPP
 
 #include <string>
+#include <iostream>
 #include <vector>
 
 typedef std::vector<size_t> Locations;
@@ -28,33 +29,38 @@ struct Value {
 
     PrimType type;
 
-    int &getInt() {
+    inline void error(std::string msg, int code = 1) {
+        std::cerr << "run-time error: " << msg << "  object: " << toString() << std::endl;
+        exit(code);
+    }
+
+    inline int &getInt() {
         if (type == INTIGER) return intiger;
-        else exit(2);
+        else error("expected an int");
     }
-    float &getFloat() {
+    inline float &getFloat() {
         if (type == FLOAT) return floating;
-        else exit(2);
+        else error("expected a float");
     }
-    bool &getBool() {
+    inline bool &getBool() {
         if (type == BOOLEAN) return boolean;
-        else exit(2);
+        else error("expected a bool");
     }
-    std::string &getIden() {
+    inline std::string &getIden() {
         if (type == IDENTIFIER) return str;
-        else exit(2);
+        else error("expected an identifier");
     }
-    size_t &getPtr() {
+    inline size_t &getPtr() {
         if (type == POINTER) return pointer;
-        else exit(2);
+        else error("expected a pointer");
     }
-    std::string &getStr() {
+    inline std::string &getStr() {
         if (type == STRING) return str;
-        else exit(2);
+        else error("expected a string");
     }
-    Locations &getList() {
+    inline Locations &getList() {
         if (type == LIST) return list_locations;
-        else exit(2);
+        else error("expected a list");
     }
 
     std::string toString();

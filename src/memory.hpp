@@ -1,3 +1,6 @@
+#ifndef MEMORY_HPP
+#define MEMORY_HPP
+
 #include "value.hpp"
 
 #include <map>
@@ -52,3 +55,5 @@ std::string Value::toString() {
     }
     return "";
 }
+
+#endif
