@@ -25,6 +25,7 @@ struct Value {
     bool boolean;
     std::string str;
     size_t pointer;
+    int box_location;
     Locations list_locations;
 
     PrimType type;
@@ -63,6 +64,14 @@ struct Value {
         else error("expected a list");
     }
 
+    inline int getBoxLoc() {
+        if (box_location == -1) {
+            error("expected an identifier");
+        } else {
+            return box_location;
+        }
+    }
+
     std::string toString();
 
 };
@@ -70,6 +79,7 @@ struct Value {
 Value intValue(int i) {
     Value v;
     v.type = INTIGER;
+    v.box_location = -1;
     v.getInt() = i;
     return v;
 }
@@ -77,6 +87,7 @@ Value intValue(int i) {
 Value floatValue(float f) {
     Value v;
     v.type = FLOAT;
+    v.box_location = -1;
     v.getFloat() = f;
     return v;
 }
@@ -84,6 +95,7 @@ Value floatValue(float f) {
 Value strValue(std::string s) {
     Value v;
     v.type = STRING;
+    v.box_location = -1;
     v.getStr() = s;
     return v;
 }
@@ -92,18 +104,21 @@ Value boolValue(bool b) {
     Value v;
     v.type = BOOLEAN;
     v.getBool() = b;
+    v.box_location = -1;
     return v;
 }
 
 Value nullValue() {
     Value v;
     v.type = NIL;
+    v.box_location = -1;
     return v;
 }
 
 Value ptrValue(size_t loc) {
     Value v;
     v.type = POINTER;
+    v.box_location = -1;
     v.pointer = loc;
     return v;
 }
@@ -111,6 +126,7 @@ Value ptrValue(size_t loc) {
 Value idenValue(std::string id) {
     Value v;
     v.type = IDENTIFIER;
+    v.box_location = -1;
     v.str = id;
     return v;
 }
@@ -118,6 +134,7 @@ Value idenValue(std::string id) {
 Value listValue(Locations l) {
     Value v;
     v.type = LIST;
+    v.box_location = -1;
     v.getList() = l;
     return v;
 }

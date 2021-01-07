@@ -5,7 +5,7 @@
 
 #include <map>
 
-struct StorageMemory {
+struct VirtualMemory {
     std::map<size_t, Value> memory;
     size_t current;
 
@@ -16,6 +16,7 @@ struct StorageMemory {
 
     int add(Value new_value) {
         memory[current] = new_value;
+        memory[current].box_location = current;
         current++;
         return current-1;
     }

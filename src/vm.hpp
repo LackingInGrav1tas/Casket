@@ -49,12 +49,27 @@ struct Machine {
                 std::cout << "OP_BEGIN_SCOPE";
             } else if (OP.op == OP_END_SCOPE) {
                 std::cout << "OP_END_SCOPE";
+            } else if (OP.op == OP_NOT) {
+                std::cout << "OP_NOT";
+            } else if (OP.op == OP_LESS) {
+                std::cout << "OP_LESS";
+            } else if (OP.op == OP_LESS_EQ) {
+                std::cout << "OP_LESS_EQ";
+            } else if (OP.op == OP_MORE) {
+                std::cout << "OP_MORE";
+            } else if (OP.op == OP_MORE_EQ) {
+                std::cout << "OP_MORE_EQ";
+            } else if (OP.op == OP_EQUALITY) {
+                std::cout << "OP_EQUALITY";
+            } else if (OP.op == OP_NOT_EQUAL) {
+                std::cout << "OP_NOT_EQUAL";
             }
             std::cout << std::endl;
         }
     }
 
     Value run() {
+        // TODO: when a fn returns an object, reset it's box location unless it returns &
         #define TOP() Value top = stack.top(); stack.pop()
         #define SIDES() Value rhs = stack.top(); stack.pop(); Value lhs = stack.top(); stack.pop()
         #define INSTRUCTION opcode[ip]
@@ -110,7 +125,7 @@ do { \
                 // stack order: new value, pointer
                 // notation: ptr = new_value
                 SIDES();
-                heap.change(lhs.getPtr(), rhs);
+                heap.change(lhs.getBoxLoc(), rhs);
 
             } else if (OP == OP_REFERENCE) {
                 // stack order: identifier
