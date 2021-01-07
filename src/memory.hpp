@@ -52,6 +52,9 @@ std::string Value::toString() {
             final.pop_back();
             return final + "]";
         }
+        case IDENTIFIER: {
+            return str;
+        }
     }
     return "";
 }

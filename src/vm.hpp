@@ -35,6 +35,20 @@ struct Machine {
                 std::cout << "OP_PRINT_POP";
             } else if (OP.op == OP_NEGATE) {
                 std::cout << "OP_NEGATE";
+            } else if (OP.op == OP_ADD) {
+                std::cout << "OP_ADD";
+            } else if (OP.op == OP_SUBTRACT) {
+                std::cout << "OP_SUBTRACT";
+            } else if (OP.op == OP_MULTIPLY) {
+                std::cout << "OP_MULTIPLY";
+            } else if (OP.op == OP_SET_VARIABLE) {
+                std::cout << "OP_SET_VARIABLE(" << OP.lexeme << ")";
+            } else if (OP.op == OP_GET_VARIABLE) {
+                std::cout << "OP_GET_VARIABLE";
+            } else if (OP.op == OP_BEGIN_SCOPE) {
+                std::cout << "OP_BEGIN_SCOPE";
+            } else if (OP.op == OP_END_SCOPE) {
+                std::cout << "OP_END_SCOPE";
             }
             std::cout << std::endl;
         }
@@ -51,17 +65,17 @@ do { \
     SIDES(); \
     if (lhs.type == FLOAT) { \
         if (rhs.type == FLOAT) { \
-            stack.push(floatValue( lhs.getFloat() - rhs.getFloat() )); \
+            stack.push(floatValue( lhs.getFloat() operator rhs.getFloat() )); \
         } else if (rhs.type == INTIGER) { \
-            stack.push(floatValue( lhs.getFloat() - rhs.getInt() )); \
+            stack.push(floatValue( lhs.getFloat() operator rhs.getInt() )); \
         } else { \
             rhs.error("invalid type for operation"); \
         } \
     } else if (lhs.type == INTIGER) { \
         if (rhs.type == FLOAT) { \
-            stack.push(floatValue( lhs.getInt() - rhs.getFloat() )); \
+            stack.push(floatValue( lhs.getInt() operator rhs.getFloat() )); \
         } else if (rhs.type == INTIGER) { \
-            stack.push(intValue( lhs.getInt() - rhs.getInt() )); \
+            stack.push(intValue( lhs.getInt() operator rhs.getInt() )); \
         } else { \
             rhs.error("invalid type for operation"); \
         } \
@@ -71,6 +85,7 @@ do { \
 } while (0)
 
         for (; ip < opcode.size(); ip++) {
+            // std::cout << "#: " << ip << "  type: " << OP << std::endl;
             if (OP == OP_CONSTANT) {
                 stack.push(INSTRUCTION.value);
 
@@ -79,6 +94,18 @@ do { \
                 // notation: set var = value
                 TOP();
                 scopes.back()[INSTRUCTION.lexeme] = heap.add(top);
+            } else if (OP == OP_GET_VARIABLE) {
+                TOP();
+                bool found = false;
+                for (int s = scopes.size()-1; s >= 0; s--) {
+                    auto it = scopes[s].find(top.getIden());
+                    if (it != scopes[s].end()) {
+                        found = true;
+                        stack.push(heap.get(it->second));
+                        break;
+                    }
+                }
+                if (!found) top.error("identifier is not in scope");
             } else if (OP == OP_EDIT_VARIABLE) {
                 // stack order: new value, pointer
                 // notation: ptr = new_value
@@ -95,6 +122,7 @@ do { \
                     if (it != scopes[s].end()) {
                         found = true;
                         stack.push(ptrValue(it->second));
+                        break;
                     }
                 }
                 if (!found) top.error("identifier is not in scope");
@@ -118,7 +146,8 @@ do { \
             } else if (OP == OP_MULTIPLY) {
                 BASIC_OPERATION(*);
             } else if (OP == OP_MODULO) {
-                BASIC_OPERATION(%);
+                SIDES();
+                stack.push(intValue(lhs.getInt() % rhs.getInt()));
             } else if (OP == OP_DIVIDE) {
                 SIDES();
                 if (lhs.type == FLOAT) {

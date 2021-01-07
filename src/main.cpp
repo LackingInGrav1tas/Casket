@@ -21,7 +21,6 @@ int main(int argc, char ** argv) {
 
     Machine vm;
     vm.init(generator);
-    std::cout << vm.opcode.size() << std::endl;
     vm.disassemble();
     /*vm.init_og(
         { 

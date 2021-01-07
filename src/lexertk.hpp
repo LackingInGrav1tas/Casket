@@ -243,6 +243,10 @@ namespace lexertk
         position(std::numeric_limits<std::size_t>::max())
       {}
 
+      std::string toStr() {
+         return "@" + std::to_string(position) + "   " + to_str(type) + " --> " + value;
+      }
+
       void clear()
       {
          type     = e_none;
@@ -384,6 +388,7 @@ namespace lexertk
       typedef token token_t;
       typedef std::deque<token_t> token_list_t;
       typedef std::deque<token_t>::iterator token_list_itr_t;
+      token_list_itr_t token_itr_;
 
       generator()
       : base_itr_(0),
@@ -817,7 +822,7 @@ namespace lexertk
    private:
 
       token_list_t token_list_;
-      token_list_itr_t token_itr_;
+      //token_list_itr_t token_itr_;
       token_list_itr_t store_token_itr_;
       token_t eof_token_;
       const char* base_itr_;

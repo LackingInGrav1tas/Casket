@@ -25,22 +25,26 @@ static int getPrecedence(Type t) {
         case Type::e_mul         : return 7;
         case Type::e_mod         : return 7;
         case Type::e_pow         : return 8;
-        case Type::e_rbracket    : return 9;
         case Type::e_lbracket    : return 9;
-        default            : return 0;
+        default                  : return 0;
     }
+}
+
+static bool invalidIdentifier(std::string id) {
+    return id == "set" || id == "fn" || id == "if" || id == "for" || id == "while";
 }
 
 
 void Machine::init(Generator gen) {
     ip = 0;
     int loc = -1;
+    heap.init();
 
     #define ADV() gen.next_token()
     #define NEXT() \
         loc++; \
         if (gen.peek_next_token().is_error()) \
-            error("parsing error: " + Token::to_str(gen.peek_next_token().type)); \
+            error("parsing error: " + gen.peek_next_token().toStr()); \
         Token current = ADV()
     #define CASE(t) (current.type == t)
     #define PEEK() (gen.peek_next_token())
@@ -51,10 +55,9 @@ void Machine::init(Generator gen) {
     std::function<void(int)> expression = [&](int p)->void {
         NEXT();
         if CASE(Type::e_lbracket) { // group
-            gen.next_token();
             expression(1);
-            if (PEEK().type != Type::e_rbracket) {
-                error("parsing error: expected a ')'  token: " + PEEK().value);
+            if ((*gen.token_itr_).type != Type::e_rbracket) {
+                error("parsing error: expected a ')'  token: " + PEEK().toStr());
             }
             loc++;
             ADV();
@@ -65,6 +68,17 @@ void Machine::init(Generator gen) {
             expression(7);
             PUSH(OP_NOT);
         } else if (current.type == Type::e_symbol && current.value == "set") {
+            NEXT();
+            std::string id = current.value;
+            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
+                error("parsing error: invalid identifier  token: " + current.toStr());
+            loc++;
+            if (ADV().value != "=")
+                error("parsing error: expected '='  token: " + current.toStr());
+
+            expression(1);
+            opcode.push_back(setOpcode(id));
+            
             return;
         } else if (current.type == Type::e_symbol && current.value == "true") {
             PUSHC(boolValue(true));
@@ -72,10 +86,11 @@ void Machine::init(Generator gen) {
             PUSHC(boolValue(false));
         } else if (current.type == Type::e_symbol && current.value == "null") {
             PUSHC(nullValue());
-        } else if (current.type == Type::e_symbol && current.value == "print") {
+        } else if (current.type == Type::e_symbol && current.value == "print") { // until stl
             PUSH(OP_PRINT_POP);
         } else if CASE(Type::e_symbol) {
             PUSHC(idenValue(current.value));
+            PUSH(OP_GET_VARIABLE);
         } else if CASE(Type::e_number) {
             int is_float = false;
             for (int i = 0; i < current.value.length(); i++) {
@@ -88,11 +103,80 @@ void Machine::init(Generator gen) {
             else PUSHC(intValue(std::stoi(current.value)));
         } else if CASE(Type::e_string) {
             PUSHC(strValue(current.value));
-        } else std::cout << "else" << std::endl;
+        } else {
+            error("expected an expression  token: " + current.toStr());
+        }
+        while (p <= getPrecedence(gen.peek_next_token().type)) {
+            NEXT();
+            switch (current.type) {
+                case Type::e_add: {
+                    expression(getPrecedence(Type::e_add));
+                    PUSH(OP_ADD);
+                    break;
+                }
+                case Type::e_sub: {
+                    expression(getPrecedence(Type::e_sub));
+                    PUSH(OP_SUBTRACT);
+                    break;
+                }
+                case Type::e_mul: {
+                    expression(getPrecedence(Type::e_mul));
+                    PUSH(OP_MULTIPLY);
+                    break;
+                }
+                case Type::e_div: {
+                    expression(getPrecedence(Type::e_div));
+                    PUSH(OP_DIVIDE);
+                    break;
+                }
+                case Type::e_mod: {
+                    expression(getPrecedence(Type::e_mod));
+                    PUSH(OP_MODULO);
+                    break;
+                }
+                case Type::e_lt: {
+                    expression(getPrecedence(Type::e_lt));
+                    PUSH(OP_LESS);
+                    break;
+                }
+                case Type::e_gt: {
+                    expression(getPrecedence(Type::e_gt));
+                    PUSH(OP_MORE);
+                    break;
+                }
+                case Type::e_lte: {
+                    expression(getPrecedence(Type::e_lte));
+                    PUSH(OP_LESS_EQ);
+                    break;
+                }
+                case Type::e_gte: {
+                    expression(getPrecedence(Type::e_gte));
+                    PUSH(OP_MORE_EQ);
+                    break;
+                }
+                case Type::e_eq: {
+                    if (current.value == "==") {
+                        expression(getPrecedence(Type::e_eq));
+                        PUSH(OP_EQUALITY);
+                    } else {
+                        expression(2);
+                        PUSH(OP_EDIT_VARIABLE);
+                    }
+                    break;
+                }
+                case Type::e_ne: {
+                    expression(getPrecedence(Type::e_ne));
+                    PUSH(OP_NOT_EQUAL);
+                    break;
+                }
+            }
+        }
     };
+    PUSH(OP_BEGIN_SCOPE);
     while (loc < (int)gen.size()-1) {
         expression(1);
     }
+    PUSH(OP_END_SCOPE);
 }
 
 #endif
