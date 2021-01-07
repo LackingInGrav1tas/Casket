@@ -1,6 +1,7 @@
 #include "vm.hpp"
 #include "parser.hpp"
 #include "lexertk.hpp"
+#include "runtime.hpp"
 
 #include <fstream>
 #include <sstream>

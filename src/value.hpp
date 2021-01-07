@@ -15,9 +15,12 @@ enum PrimType {
     NIL,
     POINTER,
     LIST,
+    FUNCTION,
     IDENTIFIER,
     INSTANCE
 };
+
+struct Function;
 
 struct Value {
     int intiger;
@@ -26,6 +29,7 @@ struct Value {
     std::string str;
     size_t pointer;
     int box_location;
+    size_t fn;
     Locations list_locations;
 
     PrimType type;
@@ -62,6 +66,11 @@ struct Value {
     inline Locations &getList() {
         if (type == LIST) return list_locations;
         else error("expected a list");
+    }
+
+    inline size_t &getFun() {
+        if (type == FUNCTION) return fn;
+        else error("expected a function");
     }
 
     inline int getBoxLoc() {
@@ -141,6 +150,14 @@ Value listValue(Locations l) {
     v.type = LIST;
     v.box_location = -1;
     v.getList() = l;
+    return v;
+}
+
+Value funValue(size_t fn) {
+    Value v;
+    v.type = FUNCTION;
+    v.box_location = -1;
+    v.getFun() = fn;
     return v;
 }
 

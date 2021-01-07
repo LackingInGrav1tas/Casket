@@ -37,7 +37,6 @@ enum Opcode {
     OP_REFERENCE,
     OP_DEREFERENCE,
 
-    OP_DECL_FN,
     OP_CALL_FN,
 
     OP_RETURN_POP,
@@ -56,9 +55,9 @@ OpcodeObject newOpcode(Opcode op) {
     return o;
 }
 
-OpcodeObject setOpcode(std::string identifier) {
+OpcodeObject spOpcode(Opcode op, std::string identifier) {
     OpcodeObject o;
-    o.op = OP_SET_VARIABLE;
+    o.op = op;
     o.lexeme = identifier;
     return o;
 }

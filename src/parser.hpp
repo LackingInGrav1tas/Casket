@@ -6,6 +6,8 @@
 #include "vm.hpp"
 #include "lexertk.hpp"
 #include "error.hpp"
+#include "function.hpp"
+#include "memory.hpp"
 
 typedef lexertk::generator Generator;
 typedef lexertk::token Token;
@@ -35,7 +37,7 @@ static bool invalidIdentifier(std::string id) {
 }
 
 
-void Machine::init(Generator gen) {
+void Machine::init(Generator &gen, bool fn_parsing) {
     ip = 0;
     int loc = -1;
     heap.init();
@@ -77,7 +79,7 @@ void Machine::init(Generator gen) {
                 error("parsing error: expected '='  token: " + current.toStr());
 
             expression(1);
-            opcode.push_back(setOpcode(id));
+            opcode.push_back(spOpcode(OP_SET_VARIABLE, id));
             
             return;
         } else if (current.type == Type::e_symbol && current.value == "true") {
@@ -89,6 +91,39 @@ void Machine::init(Generator gen) {
         } else if (current.type == Type::e_symbol && current.value == "print") { // until stl
             expression(2);
             PUSH(OP_PRINT_POP);
+            return;
+        } else if (current.type == Type::e_symbol && current.value == "fn") { // until stl
+            loc++;
+            if (ADV().type != Type::e_lbracket) error("parsing error: expected a '(' after 'fn'  token: " + gen.token_itr_->toStr());
+            Function fn;
+            while (1) {
+                NEXT();
+                if CASE(Type::e_symbol) {
+                    if (invalidIdentifier(current.value)) error("parsing error: invalid identifier  token: " + gen.token_itr_->toStr());
+                    fn.args.push_back(current.value);
+                    NEXT();
+                    if CASE(Type::e_comma) {
+                        // nada
+                    } else if CASE(Type::e_rbracket) {
+                        break;
+                    } else {
+                        error("parsing error: expected either ')' or an identifier  token: " + gen.token_itr_->toStr());
+                    }
+                } else if CASE(Type::e_rbracket) {
+                    break;
+                } else {
+                    error("parsing error: expected an identifier  token: " + gen.token_itr_->toStr());
+                }
+            }
+            int fn_loc = heap.fn_add(fn);
+            std::cout << funValue(fn_loc).toString() << std::endl;
+            if (gen.peek_next_token().type != Type::e_lcrlbracket) {
+                error("parsing error: expected a block  token: " + gen.peek_next_token().toStr());
+            }
+            Machine vm;
+            vm.init(gen, true);
+            fn.vm = vm;
+            PUSHC(funValue(fn_loc));
         } else if (current.type == Type::e_symbol && current.value == "&") {
             expression(8);
             PUSH(OP_REFERENCE);
@@ -184,6 +219,7 @@ void Machine::init(Generator gen) {
         expression(1);
         NEXT();
         if (current.value != ";") error("parsing error: expected a semicolon  token: " + current.toStr());
+        if (fn_parsing) break;
     }
     PUSH(OP_END_SCOPE);
 }
