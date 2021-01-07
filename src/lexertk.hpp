@@ -234,7 +234,7 @@ namespace lexertk
          e_lcrlbracket = '{', e_comma       = ',', e_add         = '+',
          e_sub         = '-', e_div         = '/', e_mul         = '*',
          e_mod         = '%', e_pow         = '^', e_colon       = ':',
-         e_exclamation = '!'
+         e_exclamation = '!',
       };
 
       token()

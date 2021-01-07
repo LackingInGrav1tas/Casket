@@ -87,7 +87,14 @@ void Machine::init(Generator gen) {
         } else if (current.type == Type::e_symbol && current.value == "null") {
             PUSHC(nullValue());
         } else if (current.type == Type::e_symbol && current.value == "print") { // until stl
+            expression(2);
             PUSH(OP_PRINT_POP);
+        } else if (current.type == Type::e_symbol && current.value == "&") {
+            expression(8);
+            PUSH(OP_REFERENCE);
+        } else if CASE(Type::e_mul) {
+            expression(8);
+            PUSH(OP_DEREFERENCE);
         } else if CASE(Type::e_symbol) {
             PUSHC(idenValue(current.value));
             PUSH(OP_GET_VARIABLE);
@@ -175,6 +182,8 @@ void Machine::init(Generator gen) {
     PUSH(OP_BEGIN_SCOPE);
     while (loc < (int)gen.size()-1) {
         expression(1);
+        NEXT();
+        if (current.value != ";") error("parsing error: expected a semicolon  token: " + current.toStr());
     }
     PUSH(OP_END_SCOPE);
 }

@@ -63,6 +63,10 @@ struct Machine {
                 std::cout << "OP_EQUALITY";
             } else if (OP.op == OP_NOT_EQUAL) {
                 std::cout << "OP_NOT_EQUAL";
+            } else if (OP.op == OP_REFERENCE) {
+                std::cout << "OP_REFERENCE";
+            } else if (OP.op == OP_DEREFERENCE) {
+                std::cout << "OP_DEREFERENCE";
             }
             std::cout << std::endl;
         }
@@ -131,7 +135,7 @@ do { \
                 // stack order: identifier
                 // notation: &<id-expr>
                 TOP();
-                bool found = false;
+                /*bool found = false;
                 for (int s = scopes.size()-1; s >= 0; s--) {
                     auto it = scopes[s].find(top.getIden());
                     if (it != scopes[s].end()) {
@@ -140,7 +144,9 @@ do { \
                         break;
                     }
                 }
-                if (!found) top.error("identifier is not in scope");
+                if (!found) top.error("identifier is not in scope");*/
+                if (top.getBoxLoc() == -1) stack.push(ptrValue(heap.add(top))); // boxing object
+                else stack.push(ptrValue(top.getBoxLoc()));
             } else if (OP == OP_DEREFERENCE) {
                 // stack order: ptr
                 // notation: *ptr
