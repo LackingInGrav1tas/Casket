@@ -67,6 +67,8 @@ struct Machine {
                 std::cout << "OP_REFERENCE";
             } else if (OP.op == OP_DEREFERENCE) {
                 std::cout << "OP_DEREFERENCE";
+            } else if (OP.op == OP_EDIT_VARIABLE) {
+                std::cout << "OP_EDIT_VARIABLE";
             }
             std::cout << std::endl;
         }
@@ -129,7 +131,7 @@ do { \
                 // stack order: new value, pointer
                 // notation: ptr = new_value
                 SIDES();
-                heap.change(lhs.getBoxLoc(), rhs);
+                heap.change(lhs.getBoxLoc(), rhs.edit(lhs.getBoxLoc()));
 
             } else if (OP == OP_REFERENCE) {
                 // stack order: identifier
@@ -145,7 +147,7 @@ do { \
                     }
                 }
                 if (!found) top.error("identifier is not in scope");*/
-                if (top.getBoxLoc() == -1) stack.push(ptrValue(heap.add(top))); // boxing object
+                if (top.box_location == -1) stack.push(ptrValue(heap.add(top))); // boxing object
                 else stack.push(ptrValue(top.getBoxLoc()));
             } else if (OP == OP_DEREFERENCE) {
                 // stack order: ptr

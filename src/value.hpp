@@ -72,6 +72,11 @@ struct Value {
         }
     }
 
+    Value edit(int i) {
+        box_location = i;
+        return *this;
+    }
+
     std::string toString();
 
 };
