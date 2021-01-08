@@ -70,6 +70,8 @@ struct Machine {
                 std::cout << "OP_EDIT_VARIABLE";
             } else if (OP.op == OP_COPY) {
                 std::cout << "OP_COPY";
+            } else if (OP.op == OP_CALL_FN) {
+                std::cout << "OP_CALL_FN";
             }
             std::cout << std::endl;
         }

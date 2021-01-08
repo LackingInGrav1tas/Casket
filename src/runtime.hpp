@@ -6,8 +6,9 @@
 
 Value Machine::run() {
     // TODO: when a fn returns an object, reset it's box location unless it returns &
-    #define TOP() Value top = stack.top(); stack.pop()
-    #define SIDES() Value rhs = stack.top(); stack.pop(); Value lhs = stack.top(); stack.pop()
+    #define POP() if (stack.size() == 0) error("run-time error: stack underflow"); else stack.pop()
+    #define TOP() if (stack.size() == 0) error("run-time error: stack underflow"); Value top = stack.top(); POP()
+    #define SIDES() Value rhs = stack.top(); POP(); Value lhs = stack.top(); POP()
     #define INSTRUCTION opcode[ip]
     #define OP INSTRUCTION.op
 
@@ -141,6 +142,18 @@ do { \
             TOP();
             top.box_location = -1;
             stack.push(top);
+        } else if (OP == OP_CALL_FN) {
+            TOP();
+            Function f = heap.fn_get(top.getFun());
+            f.vm.scopes.push_back(Scope());
+            for (int i = 0; i < f.args.size(); i++) {
+                TOP();
+                f.vm.scopes.back()[f.args[i]] = heap.add(top);
+            }
+            stack.push(f.vm.run());
+            for (int i = 0; i < scopes.size(); i++)
+                scopes[i] = f.vm.scopes[i];
+
 
         } else if (OP == OP_PRINT_POP) {
             TOP();

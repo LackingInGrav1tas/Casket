@@ -129,6 +129,9 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             }
             Machine vm;
             vm.init(gen, true);
+            std::cout << "FN VM:" << std::endl;
+            vm.disassemble();
+            std::cout << "-- END --" << std::endl;
             fn.vm = vm;
             PUSHC(funValue(fn_loc));
         } else if (current.type == Type::e_symbol && current.value == "&") {
@@ -219,6 +222,12 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                 case Type::e_ne: {
                     expression(getPrecedence(Type::e_ne));
                     PUSH(OP_NOT_EQUAL);
+                    break;
+                }
+
+                case Type::e_lbracket: {
+                    ADV();
+                    PUSH(OP_CALL_FN);
                     break;
                 }
             }
