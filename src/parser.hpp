@@ -39,7 +39,7 @@ static bool invalidIdentifier(std::string id) {
 
 void Machine::init(Generator &gen, bool fn_parsing) {
     ip = 0;
-    int loc = -1;
+    static int loc = -1;
     heap.init();
 
     #define ADV() gen.next_token()
@@ -52,17 +52,26 @@ void Machine::init(Generator &gen, bool fn_parsing) {
     #define PEEK() (gen.peek_next_token())
     #define PUSH(arg) opcode.push_back(newOpcode(arg))
     #define PUSHC(arg) opcode.push_back(OpConstant(arg))
-    #define EXP(n) if (!gen.empty()) expression(n); else error("run-time error: expected an expression");
 
     std::function<void(int)> expression = [&](int p)->void {
         NEXT();
         if CASE(Type::e_lbracket) { // group
             expression(1);
-            if ((*gen.token_itr_).type != Type::e_rbracket) {
+            if (gen.token_itr_->type != Type::e_rbracket) {
                 error("parsing error: expected a ')'  token: " + PEEK().toStr());
             }
             loc++;
             ADV();
+        } else if CASE(Type::e_lcrlbracket) {
+            while (1) {
+                expression(1);
+                loc++;
+                if (ADV().value != ";") error("parsing error: expected a semicolon  token: " + gen.token_itr_->toStr());
+                if (gen.peek_next_token().type == Type::e_rcrlbracket) break;
+            }
+            ADV();
+            loc++;
+            return;
         } else if CASE(Type::e_sub) {
             expression(7);
             PUSH(OP_NEGATE);
@@ -146,7 +155,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         } else if CASE(Type::e_string) {
             PUSHC(strValue(current.value));
         } else {
-            error("expected an expression  token: " + current.toStr());
+            error("parsing error: expected an expression  token: " + current.toStr());
         }
         while (p <= getPrecedence(gen.peek_next_token().type)) {
             NEXT();
@@ -217,8 +226,10 @@ void Machine::init(Generator &gen, bool fn_parsing) {
     PUSH(OP_BEGIN_SCOPE);
     while (loc < (int)gen.size()-1) {
         expression(1);
+        if (fn_parsing) break;
         NEXT();
-        if (current.value != ";") error("parsing error: expected a semicolon  token: " + current.toStr());
+        if (current.value != ";") 
+            error("parsing error: expected a semicolon  token: " + current.toStr());
         if (fn_parsing) break;
     }
     PUSH(OP_END_SCOPE);
