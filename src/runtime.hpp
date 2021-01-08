@@ -144,12 +144,16 @@ do { \
             stack.push(top);
         } else if (OP == OP_CALL_FN) {
             TOP();
-            Function f = heap.fn_get(top.getFun());
+            int fn_loc = top.getFun();
+            Function f = heap.fn_get(fn_loc);
             f.vm.scopes.push_back(Scope());
             for (int i = 0; i < f.args.size(); i++) {
                 TOP();
                 f.vm.scopes.back()[f.args[i]] = heap.add(top);
             }
+            std::cout << "\n-- in OP_CALL -- \nFN @ " << fn_loc << ":" << std::endl;
+            f.vm.disassemble();
+            std::cout << "-- END --" << std::endl;
             stack.push(f.vm.run());
             for (int i = 0; i < scopes.size(); i++)
                 scopes[i] = f.vm.scopes[i];

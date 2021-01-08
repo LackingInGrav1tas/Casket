@@ -122,17 +122,14 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                     error("parsing error: expected an identifier  token: " + gen.token_itr_->toStr());
                 }
             }
-            int fn_loc = heap.fn_add(fn);
-            std::cout << funValue(fn_loc).toString() << std::endl;
             if (gen.peek_next_token().type != Type::e_lcrlbracket) {
                 error("parsing error: expected a block  token: " + gen.peek_next_token().toStr());
             }
             Machine vm;
             vm.init(gen, true);
-            std::cout << "FN VM:" << std::endl;
-            vm.disassemble();
-            std::cout << "-- END --" << std::endl;
             fn.vm = vm;
+            int fn_loc = heap.fn_add(fn);
+            std::cout << "function stored @ " << fn_loc << ":" << std::endl;
             PUSHC(funValue(fn_loc));
         } else if (current.type == Type::e_symbol && current.value == "&") {
             expression(8);

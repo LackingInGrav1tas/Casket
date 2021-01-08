@@ -69,8 +69,10 @@ std::string Value::toString() {
             for (int i = 0; i < list_locations.size(); i++) {
                 final += heap.get(list_locations[i]).toString() + ", ";
             }
-            final.pop_back();
-            final.pop_back();
+            if (final.length() > 1) {
+                final.pop_back();
+                final.pop_back();
+            }
             return final + "]";
         }
         case IDENTIFIER: {
@@ -81,8 +83,10 @@ std::string Value::toString() {
             for (int i = 0; i < heap.fn_get(fn).args.size(); i++) {
                 final += heap.fn_get(fn).args[i] + ", ";
             }
-            final.pop_back();
-            final.pop_back();
+            if (final.length() > 3) {
+                final.pop_back();
+                final.pop_back();
+            }
             return final + ")";
         }
     }
