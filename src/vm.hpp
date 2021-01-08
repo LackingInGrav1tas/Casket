@@ -68,6 +68,8 @@ struct Machine {
                 std::cout << "OP_DEREFERENCE";
             } else if (OP.op == OP_EDIT_VARIABLE) {
                 std::cout << "OP_EDIT_VARIABLE";
+            } else if (OP.op == OP_COPY) {
+                std::cout << "OP_COPY";
             }
             std::cout << std::endl;
         }

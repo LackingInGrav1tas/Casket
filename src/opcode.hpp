@@ -39,6 +39,8 @@ enum Opcode {
 
     OP_CALL_FN,
 
+    OP_COPY,
+
     OP_RETURN_POP,
     OP_PRINT_POP
 };

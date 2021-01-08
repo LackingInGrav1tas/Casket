@@ -42,9 +42,12 @@ void Machine::init(Generator &gen, bool fn_parsing) {
     static int loc = -1;
     heap.init();
 
-    #define ADV() gen.next_token()
+    auto ADV = [&]()->Token {
+        loc++;
+        return gen.next_token();
+    };
+
     #define NEXT() \
-        loc++; \
         if (gen.peek_next_token().is_error()) \
             error("parsing error: " + gen.peek_next_token().toStr()); \
         Token current = ADV()
@@ -60,17 +63,14 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             if (gen.token_itr_->type != Type::e_rbracket) {
                 error("parsing error: expected a ')'  token: " + PEEK().toStr());
             }
-            loc++;
             ADV();
         } else if CASE(Type::e_lcrlbracket) {
             while (1) {
                 expression(1);
-                loc++;
                 if (ADV().value != ";") error("parsing error: expected a semicolon  token: " + gen.token_itr_->toStr());
                 if (gen.peek_next_token().type == Type::e_rcrlbracket) break;
             }
             ADV();
-            loc++;
             return;
         } else if CASE(Type::e_sub) {
             expression(7);
@@ -83,7 +83,6 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             std::string id = current.value;
             if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
                 error("parsing error: invalid identifier  token: " + current.toStr());
-            loc++;
             if (ADV().value != "=")
                 error("parsing error: expected '='  token: " + current.toStr());
 
@@ -101,8 +100,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             expression(2);
             PUSH(OP_PRINT_POP);
             return;
-        } else if (current.type == Type::e_symbol && current.value == "fn") { // until stl
-            loc++;
+        } else if (current.type == Type::e_symbol && current.value == "fn") {
             if (ADV().type != Type::e_lbracket) error("parsing error: expected a '(' after 'fn'  token: " + gen.token_itr_->toStr());
             Function fn;
             while (1) {
@@ -139,6 +137,9 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         } else if CASE(Type::e_mul) {
             expression(8);
             PUSH(OP_DEREFERENCE);
+        } else if CASE(Type::e_colon) {
+            expression(8);
+            PUSH(OP_COPY);
         } else if CASE(Type::e_symbol) {
             PUSHC(idenValue(current.value));
             PUSH(OP_GET_VARIABLE);

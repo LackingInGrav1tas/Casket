@@ -137,6 +137,10 @@ do { \
             SIDES();
             stack.push(boolValue( lhs.getBool() || rhs.getBool() ));
 
+        } else if (OP == OP_COPY) {
+            TOP();
+            top.box_location = -1;
+            stack.push(top);
 
         } else if (OP == OP_PRINT_POP) {
             TOP();
@@ -152,6 +156,7 @@ do { \
     }
     #undef OP
     #undef INSTUCTION
+    std::cout << "\nsucess" << std::endl;
     return intValue(0);
 }
 
