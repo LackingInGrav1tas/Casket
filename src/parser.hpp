@@ -67,7 +67,8 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         } else if CASE(Type::e_lcrlbracket) {
             while (1) {
                 expression(1);
-                if (ADV().value != ";") error("parsing error: expected a semicolon  token: " + gen.token_itr_->toStr());
+                auto v = ADV();
+                if (v.value != ";") error("parsing error: expected a semicolon  token: " + v.toStr());
                 if (gen.peek_next_token().type == Type::e_rcrlbracket) break;
             }
             ADV();
@@ -99,6 +100,10 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         } else if (current.type == Type::e_symbol && current.value == "print") { // until stl
             expression(2);
             PUSH(OP_PRINT_POP);
+            return;
+        } else if (current.type == Type::e_symbol && current.value == "return") { // until stl
+            expression(2);
+            PUSH(OP_RETURN_POP);
             return;
         } else if (current.type == Type::e_symbol && current.value == "fn") {
             if (ADV().type != Type::e_lbracket) error("parsing error: expected a '(' after 'fn'  token: " + gen.token_itr_->toStr());
