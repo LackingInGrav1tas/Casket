@@ -48,6 +48,7 @@ enum Opcode {
 struct OpcodeObject {
     Opcode op;
     std::string lexeme;
+    int i;
     Value value;
 };
 
@@ -61,6 +62,13 @@ OpcodeObject spOpcode(Opcode op, std::string identifier) {
     OpcodeObject o;
     o.op = op;
     o.lexeme = identifier;
+    return o;
+}
+
+OpcodeObject callOpcode(int i) {
+    OpcodeObject o;
+    o.op = OP_CALL_FN;
+    o.i = i;
     return o;
 }
 

@@ -143,7 +143,7 @@ do { \
             top.box_location = -1;
             stack.push(top);
         } else if (OP == OP_CALL_FN) {
-            TOP();
+            /*TOP();
             int fn_loc = top.getFun();
             Function f = heap.fn_get(fn_loc);
             f.vm.scopes.push_back(Scope());
@@ -156,8 +156,24 @@ do { \
             std::cout << "-- END --" << std::endl;
             stack.push(f.vm.run());
             for (int i = 0; i < scopes.size(); i++)
-                scopes[i] = f.vm.scopes[i];
+                scopes[i] = f.vm.scopes[i];*/
 
+            std::vector<Value> args;
+            for (int i = 0; i < INSTRUCTION.i; i++) {
+                TOP();
+                args.insert(args.begin(), top);
+            }
+            TOP();
+            int fn_loc = top.getFun();
+            Function f = heap.fn_get(fn_loc);
+            if (f.args.size() != args.size()) error("run-time error: expected " + std::to_string(f.args.size()) + " arguments, found " + std::to_string(args.size()));
+            f.vm.scopes = scopes;
+            f.vm.scopes.push_back(Scope());
+            for (int i = 0; i < f.args.size(); i++) {
+                f.vm.scopes.back()[f.args[i]] = heap.add(args[i]);
+            }
+            stack.push(f.vm.run());
+            for (int i = 0; i < scopes.size(); i++) scopes[i] = f.vm.scopes[i];
 
         } else if (OP == OP_PRINT_POP) {
             TOP();
@@ -173,7 +189,7 @@ do { \
     }
     #undef OP
     #undef INSTUCTION
-    std::cout << "\nsucess" << std::endl;
+    //std::cout << "\nsucess" << std::endl;
     return intValue(0);
 }
 

@@ -33,7 +33,8 @@ static int getPrecedence(Type t) {
 }
 
 static bool invalidIdentifier(std::string id) {
-    return id == "set" || id == "fn" || id == "if" || id == "for" || id == "while";
+    return id == "set" || id == "fn" || id == "if" || id == "for" || id == "while" ||
+    id == "true" || id == "false" || id == "print" || id == "return" || id == "null";
 }
 
 
@@ -228,8 +229,20 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                 }
 
                 case Type::e_lbracket: {
-                    ADV();
-                    PUSH(OP_CALL_FN);
+                    int i = 0;
+                    if (gen.peek_next_token().type != Type::e_rbracket) {
+                        while (1) {
+                            i++;
+                            expression(2);
+                            NEXT();
+                            if CASE(Type::e_comma) {
+                                // nada
+                            } else if CASE(Type::e_rbracket) {
+                                break;
+                            }
+                        }
+                    }
+                    opcode.push_back(callOpcode(i));
                     break;
                 }
             }
