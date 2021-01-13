@@ -41,8 +41,15 @@ enum Opcode {
 
     OP_COPY,
 
+    OP_JUMP_FALSE,
+    OP_JUMP,
+
     OP_RETURN_POP,
-    OP_PRINT_POP
+    OP_PRINT_POP,
+
+    OP_LABEL,
+    OP_GOTO_LABEL,
+    OP_ERROR,
 };
 
 struct OpcodeObject {
@@ -60,7 +67,7 @@ OpcodeObject newOpcode(Opcode op) {
 
 OpcodeObject spOpcode(Opcode op, std::string identifier) {
     OpcodeObject o;
-    o.op = op;
+    o.op     = op;
     o.lexeme = identifier;
     return o;
 }
@@ -68,13 +75,20 @@ OpcodeObject spOpcode(Opcode op, std::string identifier) {
 OpcodeObject callOpcode(int i) {
     OpcodeObject o;
     o.op = OP_CALL_FN;
-    o.i = i;
+    o.i  = i;
+    return o;
+}
+
+OpcodeObject jumpOpcode(Opcode op, int i) {
+    OpcodeObject o;
+    o.op = op;
+    o.i  = i;
     return o;
 }
 
 OpcodeObject OpConstant(Value v) {
     OpcodeObject o;
-    o.op = OP_CONSTANT;
+    o.op    = OP_CONSTANT;
     o.value = v;
     return o;
 }

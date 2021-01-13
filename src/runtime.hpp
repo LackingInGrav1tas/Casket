@@ -35,6 +35,29 @@ do { \
         lhs.error("invalid type for operation"); \
     } \
 } while (0)
+#define bBASIC_OPERATION(operator) \
+do { \
+    SIDES(); \
+    if (lhs.type == FLOAT) { \
+        if (rhs.type == FLOAT) { \
+            stack.push(boolValue( lhs.getFloat() operator rhs.getFloat() )); \
+        } else if (rhs.type == INTIGER) { \
+            stack.push(boolValue( lhs.getFloat() operator rhs.getInt() )); \
+        } else { \
+            rhs.error("invalid type for operation"); \
+        } \
+    } else if (lhs.type == INTIGER) { \
+        if (rhs.type == FLOAT) { \
+            stack.push(boolValue( lhs.getInt() operator rhs.getFloat() )); \
+        } else if (rhs.type == INTIGER) { \
+            stack.push(boolValue( lhs.getInt() operator rhs.getInt() )); \
+        } else { \
+            rhs.error("invalid type for operation"); \
+        } \
+    } else { \
+        lhs.error("invalid type for operation"); \
+    } \
+} while (0)
 
     for (; ip < opcode.size(); ip++) {
         // std::cout << "#: " << ip << "  type: " << OP << std::endl;
@@ -123,6 +146,53 @@ do { \
             } else {
                 lhs.error("invalid type for operation"); 
             }
+
+        } else if (OP == OP_MORE) {
+            bBASIC_OPERATION(>);
+        } else if (OP == OP_MORE_EQ) {
+            bBASIC_OPERATION(>=);
+        } else if (OP == OP_LESS) {
+            bBASIC_OPERATION(<);
+        } else if (OP == OP_LESS_EQ) {
+            bBASIC_OPERATION(<=);
+
+        } else if (OP == OP_EQUALITY) {
+            SIDES();
+            switch (lhs.type) {
+                case STRING:
+                    stack.push(boolValue(lhs.getStr() == rhs.getStr()));
+                    break;
+                case INTIGER:
+                    stack.push(boolValue(lhs.getInt() == rhs.getInt()));
+                    break;
+                case FLOAT:
+                    stack.push(boolValue(lhs.getFloat() == rhs.getInt()));
+                    break;
+                case BOOLEAN:
+                    stack.push(boolValue(lhs.getBool() == rhs.getBool()));
+                    break;
+                default:
+                    error("run-time error: operator '==' does not support that type.");
+            }
+        } else if (OP == OP_NOT_EQUAL) {
+            SIDES();
+            switch (lhs.type) {
+                case STRING:
+                    stack.push(boolValue(lhs.getStr() != rhs.getStr()));
+                    break;
+                case INTIGER:
+                    stack.push(boolValue(lhs.getInt() != rhs.getInt()));
+                    break;
+                case FLOAT:
+                    stack.push(boolValue(lhs.getFloat() != rhs.getInt()));
+                    break;
+                case BOOLEAN:
+                    stack.push(boolValue(lhs.getBool() != rhs.getBool()));
+                    break;
+                default:
+                    error("run-time error: operator '!=' does not support that type.");
+            }
+
         } else if (OP == OP_NEGATE) {
             TOP();
             if (top.type == INTIGER) stack.push(intValue(-top.getInt()));
@@ -143,21 +213,6 @@ do { \
             top.box_location = -1;
             stack.push(top);
         } else if (OP == OP_CALL_FN) {
-            /*TOP();
-            int fn_loc = top.getFun();
-            Function f = heap.fn_get(fn_loc);
-            f.vm.scopes.push_back(Scope());
-            for (int i = 0; i < f.args.size(); i++) {
-                TOP();
-                f.vm.scopes.back()[f.args[i]] = heap.add(top);
-            }
-            std::cout << "\n-- in OP_CALL -- \nFN @ " << fn_loc << ":" << std::endl;
-            f.vm.disassemble();
-            std::cout << "-- END --" << std::endl;
-            stack.push(f.vm.run());
-            for (int i = 0; i < scopes.size(); i++)
-                scopes[i] = f.vm.scopes[i];*/
-
             std::vector<Value> args;
             for (int i = 0; i < INSTRUCTION.i; i++) {
                 TOP();
@@ -185,6 +240,31 @@ do { \
         } else if (OP == OP_RETURN_POP) {
             TOP();
             return top;
+        }
+
+        else if (OP == OP_JUMP) {
+            ip += INSTRUCTION.i;
+        } else if (OP == OP_JUMP_FALSE) {
+            TOP();
+            if (!top.getBool()) {
+                ip += INSTRUCTION.i;
+            }
+        } else if (OP == OP_ERROR) {
+            error("OP_ERROR found.");
+        }
+
+        else if (OP == OP_GOTO_LABEL) {
+            for (int i = 0; ; i++) {
+                if (i >= opcode.size()) {
+                    error("run-time error: couldn't find the label" + INSTRUCTION.lexeme);
+                }
+                if (opcode[i].op == OP_LABEL) {
+                    if (opcode[i].lexeme == INSTRUCTION.lexeme) {
+                        ip = i;
+                        break;
+                    }
+                }
+            }
         }
     }
     #undef OP

@@ -34,7 +34,8 @@ static int getPrecedence(Type t) {
 
 static bool invalidIdentifier(std::string id) {
     return id == "set" || id == "fn" || id == "if" || id == "for" || id == "while" ||
-    id == "true" || id == "false" || id == "print" || id == "return" || id == "null";
+    id == "true" || id == "false" || id == "print" || id == "return" || id == "null" || 
+    id == "label";
 }
 
 
@@ -66,13 +67,28 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             }
             ADV();
         } else if CASE(Type::e_lcrlbracket) {
+            PUSH(OP_BEGIN_SCOPE);
             while (1) {
                 expression(1);
                 auto v = ADV();
                 if (v.value != ";") error("parsing error: expected a semicolon  token: " + v.toStr());
                 if (gen.peek_next_token().type == Type::e_rcrlbracket) break;
             }
+            PUSH(OP_END_SCOPE);
             ADV();
+            return;
+        } else if (current.type == Type::e_symbol && current.value == "if") { // until stl
+            if (gen.peek_next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen.peek_next_token().toStr());
+            // it will find a grouping and take care of the matching ')'
+            expression(2);
+
+            PUSH(OP_ERROR);
+            int size = opcode.size();
+
+            expression(1);
+
+            opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
+
             return;
         } else if CASE(Type::e_sub) {
             expression(7);
@@ -86,12 +102,35 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
                 error("parsing error: invalid identifier  token: " + current.toStr());
             if (ADV().value != "=")
-                error("parsing error: expected '='  token: " + current.toStr());
+                error("parsing error: expected '='  token: " + gen.token_itr_->toStr());
 
             expression(1);
             opcode.push_back(spOpcode(OP_SET_VARIABLE, id));
             
             return;
+        } else if (current.type == Type::e_symbol && current.value == "label") {
+            NEXT();
+            std::string id = current.value;
+            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
+                error("parsing error: invalid identifier  token: " + current.toStr());
+
+            OpcodeObject op;
+            op.lexeme = id;
+            op.op = OP_LABEL;
+            opcode.push_back(op);
+            return;
+        } else if (current.type == Type::e_symbol && current.value == "goto") {
+            NEXT();
+            std::string id = current.value;
+            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
+                error("parsing error: invalid identifier  token: " + current.toStr());
+
+            OpcodeObject op;
+            op.lexeme = id;
+            op.op = OP_GOTO_LABEL;
+            opcode.push_back(op);
+            return;
+
         } else if (current.type == Type::e_symbol && current.value == "true") {
             PUSHC(boolValue(true));
         } else if (current.type == Type::e_symbol && current.value == "false") {
@@ -241,6 +280,8 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                                 break;
                             }
                         }
+                    } else {
+                        ADV();
                     }
                     opcode.push_back(callOpcode(i));
                     break;

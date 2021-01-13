@@ -72,6 +72,14 @@ struct Machine {
                 std::cout << "OP_COPY";
             } else if (OP.op == OP_CALL_FN) {
                 std::cout << "OP_CALL_FN";
+            } else if (OP.op == OP_JUMP_FALSE) {
+                std::cout << "OP_JUMP_FALSE(" << OP.i << ")";
+            } else if (OP.op == OP_ERROR) {
+                std::cout << "OP_ERROR";
+            } else if (OP.op == OP_LABEL) {
+                std::cout << "OP_LABEL(" + OP.lexeme << ")";
+            } else if (OP.op == OP_GOTO_LABEL) {
+                std::cout << "OP_GOTO_LABEL(" << OP.lexeme << ")";
             }
             std::cout << std::endl;
         }
