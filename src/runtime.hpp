@@ -60,7 +60,7 @@ do { \
 } while (0)
 
     for (; ip < opcode.size(); ip++) {
-        // std::cout << "#: " << ip << "  type: " << OP << std::endl;
+        std::cout << "#: " << ip << "  type: " << OP << std::endl;
         if (OP == OP_CONSTANT) {
             stack.push(INSTRUCTION.value);
 
@@ -113,6 +113,7 @@ do { \
         } else if (OP == OP_BEGIN_SCOPE) {
             scopes.push_back(std::map<std::string, size_t>());
         } else if (OP == OP_END_SCOPE) {
+            if (scopes.size() == 0) error("run-time error: scope underflow");
             scopes.pop_back();
 
 

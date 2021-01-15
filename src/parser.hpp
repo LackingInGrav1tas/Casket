@@ -35,12 +35,13 @@ static int getPrecedence(Type t) {
 static bool invalidIdentifier(std::string id) {
     return id == "set" || id == "fn" || id == "if" || id == "for" || id == "while" ||
     id == "true" || id == "false" || id == "print" || id == "return" || id == "null" || 
-    id == "label";
+    id == "label" || id == "else";
 }
 
 
 void Machine::init(Generator &gen, bool fn_parsing) {
     ip = 0;
+    bool exempt = false;
     static int loc = -1;
     heap.init();
 
@@ -76,6 +77,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             }
             PUSH(OP_END_SCOPE);
             ADV();
+            exempt = true;
             return;
         } else if (current.type == Type::e_symbol && current.value == "if") { // until stl
             if (gen.peek_next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen.peek_next_token().toStr());
@@ -87,7 +89,20 @@ void Machine::init(Generator &gen, bool fn_parsing) {
 
             expression(1);
 
-            opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
+            //std::cout << "\nvalue = " << gen.token_itr_->value << std::endl;
+            if (gen.token_itr_->value == "else") {
+                ADV();
+                PUSH(OP_ERROR);
+                int elsesize = opcode.size();
+
+                opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
+
+                expression(1);
+
+                opcode[elsesize-1] = jumpOpcode(OP_JUMP, opcode.size() - elsesize);
+            } else {
+                opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
+            }
 
             return;
         } else if CASE(Type::e_sub) {
@@ -186,6 +201,8 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             expression(8);
             PUSH(OP_COPY);
         } else if CASE(Type::e_symbol) {
+            if (invalidIdentifier(current.value))
+                error("parsing error: expected a valid identifier  token: " + current.toStr());
             PUSHC(idenValue(current.value));
             PUSH(OP_GET_VARIABLE);
         } else if CASE(Type::e_number) {
@@ -293,10 +310,13 @@ void Machine::init(Generator &gen, bool fn_parsing) {
     while (loc < (int)gen.size()-1) {
         expression(1);
         if (fn_parsing) break;
-        NEXT();
-        if (current.value != ";") 
-            error("parsing error: expected a semicolon  token: " + current.toStr());
-        if (fn_parsing) break;
+        if (!exempt) {
+            NEXT();
+            if (current.value != ";") 
+                error("parsing error: expected a semicolon  token: " + current.toStr());
+            if (fn_parsing) break;
+        } else
+            exempt = false;
     }
     PUSH(OP_END_SCOPE);
 }

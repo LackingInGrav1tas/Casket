@@ -74,6 +74,8 @@ struct Machine {
                 std::cout << "OP_CALL_FN";
             } else if (OP.op == OP_JUMP_FALSE) {
                 std::cout << "OP_JUMP_FALSE(" << OP.i << ")";
+            } else if (OP.op == OP_JUMP) {
+                std::cout << "OP_JUMP(" << OP.i << ")";
             } else if (OP.op == OP_ERROR) {
                 std::cout << "OP_ERROR";
             } else if (OP.op == OP_LABEL) {
