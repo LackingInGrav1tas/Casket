@@ -15,8 +15,8 @@ struct VirtualMemory {
 
     void init() {
         // standard library loaded directly into memory
-        current = 0;
-        fn_current = 0;
+        current = 1;
+        fn_current = 1;
     }
 
     int add(Value new_value) {

@@ -120,6 +120,7 @@ do { \
 
 
         } else if (OP == OP_ADD) {
+            // if (stack.top().type == INTIGER || stack.top().type == FLOAT) 
             BASIC_OPERATION(+);
         } else if (OP == OP_SUBTRACT) {
             BASIC_OPERATION(-);
@@ -246,7 +247,7 @@ do { \
                         auto fn = heap.fn_get(heap.get(it->second).getFun());
                         if (fn.args.size() == 0) {
                             Scope layer;
-                            layer["this"] = top.home_location;
+                            layer["this"] = top.box_location;
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             std::cout << fn.vm.run().getStr();
@@ -294,9 +295,19 @@ do { \
 
         else if (OP == OP_GET_MEMBER) {
             SIDES();
-            size_t l = lhs.members[rhs.getIden()];
-            if (l != NULL) stack.push(heap.get(l));
-            else error("run-time error: object has no member " + rhs.getIden());
+            if (lhs.members.find(rhs.getIden()) != lhs.members.end())
+                stack.push(heap.get(lhs.members[rhs.getIden()]));
+            else {
+                std::string message = "run-time error: object has no member " + rhs.getIden() + ". did you mean: [";
+                for (auto it = lhs.members.begin(); it != lhs.members.end(); it++) {
+                    message += it->first + ", ";
+                }
+                if (message.back() == ' ') {
+                    message.pop_back();
+                    message.pop_back();
+                }
+                error(message + "]");
+            }
         }
 
         else if (OP == OP_INDEX) {
