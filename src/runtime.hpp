@@ -230,6 +230,9 @@ do { \
             for (int i = 0; i < f.args.size(); i++) {
                 f.vm.scopes.back()[f.args[i]] = heap.add(args[i]);
             }
+            if (top.c_lass != -1) {
+                f.vm.scopes.back()["this"] = top.c_lass;
+            }
             stack.push(f.vm.run());
             for (int i = 0; i < scopes.size(); i++) scopes[i] = f.vm.scopes[i];
 
@@ -293,7 +296,7 @@ do { \
                 stack.pop();
                 std::string id = stack.top().getIden();
                 stack.pop();
-                std::cout << "\nmember: " << id << "\nvalue: " << value.toString() << std::endl;
+                // std::cout << "\nmember: " << id << "\nvalue: " << value.toString() << std::endl;
                 t.members[id] = value;
             }
             templates.back()[opcode[ip].lexeme] = t;

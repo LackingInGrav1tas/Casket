@@ -37,7 +37,7 @@ static int getPrecedence(Type t) {
 static bool invalidIdentifier(std::string id) {
     return id == "set" || id == "fn" || id == "if" || id == "for" || id == "while" ||
     id == "true" || id == "false" || id == "print" || id == "return" || id == "null" || 
-    id == "label" || id == "else" || id == "class" || id == "inst";
+    id == "label" || id == "else" || id == "class" || id == "inst" || id == "this";
 }
 
 
@@ -260,7 +260,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             expression(8);
             PUSH(OP_COPY);
         } else if CASE(Type::e_symbol) {
-            if (invalidIdentifier(current.value))
+            if (invalidIdentifier(current.value) && current.value != "this")
                 error("parsing error: expected a valid identifier  token: " + current.toStr());
             PUSHC(idenValue(current.value));
             PUSH(OP_GET_VARIABLE);
