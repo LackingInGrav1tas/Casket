@@ -4,6 +4,7 @@
 #include "opcode.hpp"
 #include "error.hpp"
 #include "lexertk.hpp"
+#include "classes.hpp"
 
 #include <stack>
 #include <iostream>
@@ -12,6 +13,7 @@
 typedef std::map<std::string, size_t> Scope;
 
 struct Machine {
+    std::vector<std::map<std::string, ClassTemplate>> templates;
     std::vector<OpcodeObject> opcode;
     std::vector<Scope> scopes;
     std::stack<Value> stack;
@@ -26,6 +28,7 @@ struct Machine {
 
     void disassemble() {
         #define OP opcode[i]
+        std::cout << std::endl;
         for (int i = 0; i < opcode.size(); i++) {
             std::cout << i << ": ";
             if (OP.op == OP_CONSTANT) {
@@ -82,6 +85,14 @@ struct Machine {
                 std::cout << "OP_LABEL(" + OP.lexeme << ")";
             } else if (OP.op == OP_GOTO_LABEL) {
                 std::cout << "OP_GOTO_LABEL(" << OP.lexeme << ")";
+            } else if (OP.op == OP_DECL_CLASS) {
+                std::cout << "OP_DECL_CLASS(" << OP.lexeme << ", " << OP.i << ")";
+            } else if (OP.op == OP_GET_MEMBER) {
+                std::cout << "OP_GET_MEMBER";
+            } else if (OP.op == OP_CREATE_INST) {
+                std::cout << "OP_CREATE_INST(" << OP.lexeme << ")";
+            } else {
+                std::cout << OP.op;
             }
             std::cout << std::endl;
         }

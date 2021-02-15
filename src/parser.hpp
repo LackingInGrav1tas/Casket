@@ -28,6 +28,8 @@ static int getPrecedence(Type t) {
         case Type::e_mod         : return 7;
         case Type::e_pow         : return 8;
         case Type::e_lbracket    : return 9;
+        case Type::e_lsqrbracket : return 9;
+        case Type::e_number      : return 9; // inst.member
         default                  : return 0;
     }
 }
@@ -35,7 +37,7 @@ static int getPrecedence(Type t) {
 static bool invalidIdentifier(std::string id) {
     return id == "set" || id == "fn" || id == "if" || id == "for" || id == "while" ||
     id == "true" || id == "false" || id == "print" || id == "return" || id == "null" || 
-    id == "label" || id == "else";
+    id == "label" || id == "else" || id == "class" || id == "inst";
 }
 
 
@@ -79,7 +81,58 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             ADV();
             exempt = true;
             return;
-        } else if (current.type == Type::e_symbol && current.value == "if") { // until stl
+        } else if (current.type == Type::e_symbol && current.value == "class") {
+            NEXT();
+            if (current.type != Type::e_symbol || invalidIdentifier(current.value)) {
+                error("parsing error: expected a valid identifier  token: " + current.toStr());
+            }
+            std::string name = current.value;
+            if (ADV().type != Type::e_lcrlbracket) {
+                error("parsing error: expected a valid identifier  token: " + PEEK().toStr());
+            }
+
+            int i = 0;
+            while (1) {
+                if (PEEK().type == Type::e_rcrlbracket) {
+                    break;
+                } else {
+                    i++;
+                    Token tname = ADV();
+                    if (tname.type != Type::e_symbol || invalidIdentifier(tname.value)) {
+                        error("parsing error: expected an identifier  !!  token: " + tname.toStr());
+                    }
+                    PUSHC(idenValue(tname.value));
+                    NEXT();
+                    if CASE(Type::e_colon) {
+                        expression(1);
+                        NEXT();
+                        if (current.value == ";") {
+                            // nada
+                        } else if CASE(Type::e_rbracket) {
+                            break;
+                        }
+                    } else if (current.value != ";") {
+                        error("parsing error: expected either ';' or ':'  token: " + current.toStr());
+                    } else {
+                        PUSHC(nullValue());
+                    }
+                }
+            }
+
+            opcode.push_back(DeclClassOpcode(name, i));
+
+            exempt = true;
+
+            ADV();
+
+            return;
+        } else if (current.type == Type::e_symbol && current.value == "inst") { // until stl
+            NEXT();
+            if (current.type != Type::e_symbol || invalidIdentifier(current.value))
+                error("parsing error: expected a valid class name");
+            opcode.push_back(InstanceOpcode(current.value));
+
+        } else if (current.type == Type::e_symbol && current.value == "if") {
             if (gen.peek_next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen.peek_next_token().toStr());
             // it will find a grouping and take care of the matching ')'
             expression(2);
@@ -105,6 +158,12 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             }
 
             return;
+        } else if (current.type == Type::e_symbol && current.value == "while") {
+            if (gen.peek_next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen.peek_next_token().toStr());
+            // it will find a grouping and take care of the matching ')'
+            expression(2);
+
+
         } else if CASE(Type::e_sub) {
             expression(7);
             PUSH(OP_NEGATE);
@@ -206,15 +265,19 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             PUSHC(idenValue(current.value));
             PUSH(OP_GET_VARIABLE);
         } else if CASE(Type::e_number) {
-            int is_float = false;
-            for (int i = 0; i < current.value.length(); i++) {
-                if (current.value[i] == '.') {
-                    is_float = true;
-                    break;
+            try {
+                int is_float = false;
+                for (int i = 0; i < current.value.length(); i++) {
+                    if (current.value[i] == '.') {
+                        is_float = true;
+                        break;
+                    }
                 }
+                if (is_float) PUSHC(floatValue(std::stof(current.value)));
+                else PUSHC(intValue(std::stoi(current.value)));
+            } catch(...) {
+                error("parsing error: couldn't parse number  token: " + current.toStr());
             }
-            if (is_float) PUSHC(floatValue(std::stof(current.value)));
-            else PUSHC(intValue(std::stoi(current.value)));
         } else if CASE(Type::e_string) {
             PUSHC(strValue(current.value));
         } else {
@@ -222,86 +285,117 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         }
         while (p <= getPrecedence(gen.peek_next_token().type)) {
             NEXT();
-            switch (current.type) {
-                case Type::e_add: {
-                    expression(getPrecedence(Type::e_add));
-                    PUSH(OP_ADD);
-                    break;
-                }
-                case Type::e_sub: {
-                    expression(getPrecedence(Type::e_sub));
-                    PUSH(OP_SUBTRACT);
-                    break;
-                }
-                case Type::e_mul: {
-                    expression(getPrecedence(Type::e_mul));
-                    PUSH(OP_MULTIPLY);
-                    break;
-                }
-                case Type::e_div: {
-                    expression(getPrecedence(Type::e_div));
-                    PUSH(OP_DIVIDE);
-                    break;
-                }
-                case Type::e_mod: {
-                    expression(getPrecedence(Type::e_mod));
-                    PUSH(OP_MODULO);
-                    break;
-                }
-                case Type::e_lt: {
-                    expression(getPrecedence(Type::e_lt));
-                    PUSH(OP_LESS);
-                    break;
-                }
-                case Type::e_gt: {
-                    expression(getPrecedence(Type::e_gt));
-                    PUSH(OP_MORE);
-                    break;
-                }
-                case Type::e_lte: {
-                    expression(getPrecedence(Type::e_lte));
-                    PUSH(OP_LESS_EQ);
-                    break;
-                }
-                case Type::e_gte: {
-                    expression(getPrecedence(Type::e_gte));
-                    PUSH(OP_MORE_EQ);
-                    break;
-                }
-                case Type::e_eq: {
-                    if (current.value == "==") {
-                        expression(getPrecedence(Type::e_eq));
-                        PUSH(OP_EQUALITY);
-                    } else {
-                        expression(2);
-                        PUSH(OP_EDIT_VARIABLE);
+            if (current.value == ".") {
+                NEXT();
+                if (current.type != Type::e_symbol || invalidIdentifier(current.value))
+                    error("parsing error: expected an identifier");
+                PUSHC(idenValue(current.value));
+                PUSH(OP_GET_MEMBER);
+            } else {
+                switch (current.type) {
+                    case Type::e_add: {
+                        expression(getPrecedence(Type::e_add));
+                        PUSH(OP_ADD);
+                        break;
                     }
-                    break;
-                }
-                case Type::e_ne: {
-                    expression(getPrecedence(Type::e_ne));
-                    PUSH(OP_NOT_EQUAL);
-                    break;
-                }
-
-                case Type::e_lbracket: {
-                    int i = 0;
-                    if (gen.peek_next_token().type != Type::e_rbracket) {
-                        while (1) {
-                            i++;
+                    case Type::e_sub: {
+                        expression(getPrecedence(Type::e_sub));
+                        PUSH(OP_SUBTRACT);
+                        break;
+                    }
+                    case Type::e_mul: {
+                        expression(getPrecedence(Type::e_mul));
+                        PUSH(OP_MULTIPLY);
+                        break;
+                    }
+                    case Type::e_div: {
+                        expression(getPrecedence(Type::e_div));
+                        PUSH(OP_DIVIDE);
+                        break;
+                    }
+                    case Type::e_mod: {
+                        expression(getPrecedence(Type::e_mod));
+                        PUSH(OP_MODULO);
+                        break;
+                    }
+                    case Type::e_lt: {
+                        expression(getPrecedence(Type::e_lt));
+                        PUSH(OP_LESS);
+                        break;
+                    }
+                    case Type::e_gt: {
+                        expression(getPrecedence(Type::e_gt));
+                        PUSH(OP_MORE);
+                        break;
+                    }
+                    case Type::e_lte: {
+                        expression(getPrecedence(Type::e_lte));
+                        PUSH(OP_LESS_EQ);
+                        break;
+                    }
+                    case Type::e_gte: {
+                        expression(getPrecedence(Type::e_gte));
+                        PUSH(OP_MORE_EQ);
+                        break;
+                    }
+                    case Type::e_eq: {
+                        if (current.value == "==") {
+                            expression(getPrecedence(Type::e_eq));
+                            PUSH(OP_EQUALITY);
+                        } else {
                             expression(2);
-                            NEXT();
-                            if CASE(Type::e_comma) {
-                                // nada
-                            } else if CASE(Type::e_rbracket) {
-                                break;
-                            }
+                            PUSH(OP_EDIT_VARIABLE);
                         }
-                    } else {
-                        ADV();
+                        break;
                     }
-                    opcode.push_back(callOpcode(i));
-                    break;
+                    case Type::e_ne: {
+                        expression(getPrecedence(Type::e_ne));
+                        PUSH(OP_NOT_EQUAL);
+                        break;
+                    }
+
+                    case Type::e_lbracket: {
+                        int i = 0;
+                        if (gen.peek_next_token().type != Type::e_rbracket) {
+                            while (1) {
+                                i++;
+                                expression(2);
+                                NEXT();
+                                if CASE(Type::e_comma) {
+                                    // nada
+                                } else if CASE(Type::e_rbracket) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            ADV();
+                        }
+                        opcode.push_back(callOpcode(i));
+                        break;
+                    }
+
+                    case Type::e_lsqrbracket: {
+                        expression(2);
+                        NEXT();
+                        if (current.type != Type::e_rsqrbracket) {
+                            error("parsing error: expected a ']' " + current.toStr());
+                        }
+                        PUSH(OP_INDEX);
+                        break;
+                    }
+
+                    case Type::e_number: {
+                        if (current.value == ".") {
+                            // here ;
+                            NEXT();
+                            if (current.type != Type::e_symbol || invalidIdentifier(current.value))
+                                error("parsing error: expected an identifier  token: " + current.toStr());
+                            PUSHC(idenValue(current.value));
+                            PUSH(OP_GET_MEMBER);
+                        } else {
+                            error("parsing error: expected a semicolon -- 390.");
+                        }
+                    }
                 }
             }
         }

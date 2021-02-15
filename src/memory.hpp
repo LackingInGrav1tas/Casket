@@ -27,6 +27,7 @@ struct VirtualMemory {
     }
     void change(size_t pos, Value new_value) {
         memory[pos] = new_value;
+        memory[pos].box_location = pos;
     }
     void dump(size_t pos) {
         memory.erase(pos);
@@ -91,6 +92,16 @@ std::string Value::toString() {
         }
     }
     return "";
+}
+
+Value instanceValue(ClassTemplate tmplt) {
+    Value instance;
+    instance.type = INSTANCE;
+    int loc = heap.add(instance);
+    for (auto it = tmplt.members.begin(); it != tmplt.members.end(); it++) {
+        heap.memory[loc].members[it->first] = heap.add(it->second);
+    }
+    return heap.memory[loc];
 }
 
 #endif

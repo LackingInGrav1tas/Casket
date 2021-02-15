@@ -60,7 +60,7 @@ do { \
 } while (0)
 
     for (; ip < opcode.size(); ip++) {
-        std::cout << "#: " << ip << "  type: " << OP << std::endl;
+        //std::cout << "#: " << ip << "  type: " << OP << std::endl;
         if (OP == OP_CONSTANT) {
             stack.push(INSTRUCTION.value);
 
@@ -112,9 +112,11 @@ do { \
 
         } else if (OP == OP_BEGIN_SCOPE) {
             scopes.push_back(std::map<std::string, size_t>());
+            templates.push_back(std::map<std::string, ClassTemplate>());
         } else if (OP == OP_END_SCOPE) {
             if (scopes.size() == 0) error("run-time error: scope underflow");
             scopes.pop_back();
+            templates.pop_back();
 
 
         } else if (OP == OP_ADD) {
@@ -267,6 +269,60 @@ do { \
                 }
             }
         }
+
+        else if (OP == OP_GET_MEMBER) {
+            SIDES();
+            size_t l = lhs.members[rhs.getIden()];
+            if (l != NULL) stack.push(heap.get(l));
+            else error("run-time error: object has no member " + rhs.getIden());
+        }
+
+        else if (OP == OP_INDEX) {
+            SIDES();
+            if (lhs.getStr().length() <= rhs.getInt()) {
+                error("run-time error: index " + std::to_string(rhs.getInt()) + " out of range.");
+            } else {
+                stack.push(strValue(std::string(1, lhs.getStr().at(rhs.getInt()))));
+            }
+        }
+
+        else if (OP == OP_DECL_CLASS) {
+            ClassTemplate t;
+            for (int i = 0; i < opcode[ip].i; i++) {
+                auto value = stack.top();
+                stack.pop();
+                std::string id = stack.top().getIden();
+                stack.pop();
+                std::cout << "\nmember: " << id << "\nvalue: " << value.toString() << std::endl;
+                t.members[id] = value;
+            }
+            templates.back()[opcode[ip].lexeme] = t;
+        }
+
+        else if (OP == OP_CREATE_INST) {
+            ClassTemplate templt;
+            bool found = false;
+            for (int s = templates.size()-1; s >= 0; s--) {
+                auto it = templates[s].find(opcode[ip].lexeme);
+                if (it != templates[s].end()) {
+                    found = true;
+                    templt = it->second;
+                    break;
+                }
+            }
+            if (!found) error("run-time error: couldn't find class " + opcode[ip].lexeme + " in scope.");
+
+            stack.push(instanceValue(templt));
+        }
+
+        /*else if (OP == OP_OK_FN) {
+            TOP();
+            if (top.type == NIL) {
+                error("run-time error: found ")
+            } else {
+                stack.push(top);
+            }
+        }*/
     }
     #undef OP
     #undef INSTUCTION

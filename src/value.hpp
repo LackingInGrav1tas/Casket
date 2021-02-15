@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <map>
 
 typedef std::vector<size_t> Locations;
 
@@ -20,8 +21,6 @@ enum PrimType {
     INSTANCE
 };
 
-struct Function;
-
 struct Value {
     int intiger;
     float floating;
@@ -30,6 +29,7 @@ struct Value {
     size_t pointer;
     int box_location;
     size_t fn;
+    std::map<std::string, size_t> members;
     Locations list_locations;
 
     PrimType type;

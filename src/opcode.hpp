@@ -50,6 +50,13 @@ enum Opcode {
     OP_LABEL,
     OP_GOTO_LABEL,
     OP_ERROR,
+
+    OP_DECL_CLASS,
+    OP_CREATE_INST,
+    OP_GET_MEMBER,
+
+    OP_INDEX,
+    OP_CREATE_LIST,
 };
 
 struct OpcodeObject {
@@ -90,6 +97,21 @@ OpcodeObject OpConstant(Value v) {
     OpcodeObject o;
     o.op    = OP_CONSTANT;
     o.value = v;
+    return o;
+}
+
+OpcodeObject DeclClassOpcode(std::string classname, int i) {
+    OpcodeObject o;
+    o.op     = OP_DECL_CLASS;
+    o.lexeme = classname;
+    o.i      = i;
+    return o;
+}
+
+OpcodeObject InstanceOpcode(std::string name) {
+    OpcodeObject o;
+    o.op = OP_CREATE_INST;
+    o.lexeme = name;
     return o;
 }
 
