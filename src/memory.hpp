@@ -100,7 +100,7 @@ Value instanceValue(ClassTemplate tmplt) {
     int loc = heap.add(instance);
     for (auto it = tmplt.members.begin(); it != tmplt.members.end(); it++) {
         Value v = it->second;
-        v.c_lass = loc;
+        v.home_location = loc;
         heap.memory[loc].members[it->first] = heap.add(v);
     }
     return heap.memory[loc];

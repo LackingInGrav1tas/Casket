@@ -28,7 +28,7 @@ struct Value {
     std::string str;
     size_t pointer;
     int box_location;
-    int c_lass;
+    int home_location;
     size_t fn;
     std::map<std::string, size_t> members;
     Locations list_locations;
@@ -36,7 +36,7 @@ struct Value {
     PrimType type;
 
     inline Value& locate_base(int l) {
-        c_lass = l;
+        home_location = l;
         return *this;
     }
 
@@ -100,7 +100,7 @@ Value intValue(int i) {
     Value v;
     v.type = INTIGER;
     v.box_location = -1;
-    v.c_lass = -1;
+    v.home_location = -1;
     v.getInt() = i;
     return v;
 }
@@ -110,7 +110,7 @@ Value floatValue(float f) {
     v.type = FLOAT;
     v.box_location = -1;
     v.getFloat() = f;
-    v.c_lass = -1;
+    v.home_location = -1;
     return v;
 }
 
@@ -118,7 +118,7 @@ Value strValue(std::string s) {
     Value v;
     v.type = STRING;
     v.box_location = -1;
-    v.c_lass = -1;
+    v.home_location = -1;
     v.getStr() = s;
     return v;
 }
@@ -126,7 +126,7 @@ Value strValue(std::string s) {
 Value boolValue(bool b) {
     Value v;
     v.type = BOOLEAN;
-    v.c_lass = -1;
+    v.home_location = -1;
     v.getBool() = b;
     v.box_location = -1;
     return v;
@@ -136,7 +136,7 @@ Value nullValue() {
     Value v;
     v.type = NIL;
     v.box_location = -1;
-    v.c_lass = -1;
+    v.home_location = -1;
     return v;
 }
 
@@ -144,7 +144,7 @@ Value ptrValue(size_t loc) {
     Value v;
     v.type = POINTER;
     v.box_location = -1;
-    v.c_lass = -1;
+    v.home_location = -1;
     v.pointer = loc;
     return v;
 }
@@ -153,7 +153,7 @@ Value idenValue(std::string id) {
     Value v;
     v.type = IDENTIFIER;
     v.box_location = -1;
-    v.c_lass = -1;
+    v.home_location = -1;
     v.str = id;
     return v;
 }
@@ -162,7 +162,7 @@ Value listValue(Locations l) {
     Value v;
     v.type = LIST;
     v.box_location = -1;
-    v.c_lass = -1;
+    v.home_location = -1;
     v.getList() = l;
     return v;
 }
@@ -171,7 +171,7 @@ Value funValue(size_t fn) {
     Value v;
     v.type = FUNCTION;
     v.box_location = -1;
-    v.c_lass = -1;
+    v.home_location = -1;
     v.getFun() = fn;
     return v;
 }

@@ -227,22 +227,41 @@ do { \
             if (f.args.size() != args.size()) error("run-time error: expected " + std::to_string(f.args.size()) + " arguments, found " + std::to_string(args.size()));
             f.vm.scopes = scopes;
             f.vm.scopes.push_back(Scope());
+            f.vm.templates.push_back(std::map<std::string, ClassTemplate>());
             for (int i = 0; i < f.args.size(); i++) {
                 f.vm.scopes.back()[f.args[i]] = heap.add(args[i]);
             }
-            if (top.c_lass != -1) {
-                f.vm.scopes.back()["this"] = top.c_lass;
+            if (top.home_location != -1) {
+                f.vm.scopes.back()["this"] = top.home_location;
             }
             stack.push(f.vm.run());
             for (int i = 0; i < scopes.size(); i++) scopes[i] = f.vm.scopes[i];
 
         } else if (OP == OP_PRINT_POP) {
             TOP();
+            if (top.type == INSTANCE) {
+                auto it = top.members.find("to_string");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 0) {
+                            Scope layer;
+                            layer["this"] = top.home_location;
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            std::cout << fn.vm.run().getStr();
+                            continue;
+                        }
+                    }
+                }
+            }
+
             std::string s = top.toString();
             if (top.type == STRING)
                 std::cout << s.substr(1, s.length()-2);
             else
                 std::cout << s;
+            
         } else if (OP == OP_RETURN_POP) {
             TOP();
             return top;
