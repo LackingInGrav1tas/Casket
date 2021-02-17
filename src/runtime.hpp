@@ -12,10 +12,39 @@ Value Machine::run() {
     #define INSTRUCTION opcode[ip]
     #define OP INSTRUCTION.op
 
-    #define BASIC_OPERATION(operator) \
+    #define BASIC_OPERATION(operator, trait) \
 do { \
     SIDES(); \
-    if (lhs.type == FLOAT) { \
+    if (lhs.type == INSTANCE || rhs.type == INSTANCE) { \
+        Value top; \
+        Value arg; \
+        bool left = false; \
+        if (lhs.type == INSTANCE) { \
+            top = lhs; \
+            arg = rhs; \
+            left = true; \
+        } else { \
+            top = rhs; \
+            arg = lhs; \
+        } \
+        auto it = top.members.find(trait); \
+        if (it != top.members.end()) { \
+            if (heap.get(it->second).type == FUNCTION) { \
+                auto fn = heap.fn_get(heap.get(it->second).getFun()); \
+                if (fn.args.size() == 1) { \
+                    Scope layer; \
+                    layer["this"] = top.box_location; \
+                    layer["left"] = heap.add(boolValue(left)); \
+                    layer[fn.args[0]] = heap.add(arg); \
+                    fn.vm.scopes.push_back(layer); \
+                    fn.vm.templates.push_back(std::map<std::string, ClassTemplate>()); \
+                    stack.push(fn.vm.run()); \
+                    continue; \
+                } \
+            } \
+        } \
+        lhs.error("invalid type for operation"); \
+    } else if (lhs.type == FLOAT) { \
         if (rhs.type == FLOAT) { \
             stack.push(floatValue( lhs.getFloat() operator rhs.getFloat() )); \
         } else if (rhs.type == INTIGER) { \
@@ -120,7 +149,8 @@ do { \
 
 
         } else if (OP == OP_ADD) {
-            if (stack.top().type == INTIGER || stack.top().type == FLOAT) {
+            BASIC_OPERATION(+, "operator_add");
+            /*if (stack.top().type == INTIGER || stack.top().type == FLOAT) {
                 BASIC_OPERATION(+);
             } else if (stack.top().type == INSTANCE) {
                 TOP();
@@ -145,61 +175,13 @@ do { \
                 stack.push(strValue(lhs.getStr() + rhs.getStr()));
             } else {
                 stack.top().error("expected either an instance, string, or number.");
-            }
+            }*/
         } else if (OP == OP_SUBTRACT) {
-            if (stack.top().type == INTIGER || stack.top().type == FLOAT) {
-                BASIC_OPERATION(-);
-            } else if (stack.top().type == INSTANCE) {
-                TOP();
-                auto it = top.members.find("operator_subtract");
-                if (it != top.members.end()) {
-                    if (heap.get(it->second).type == FUNCTION) {
-                        auto fn = heap.fn_get(heap.get(it->second).getFun());
-                        if (fn.args.size() == 1) {
-                            Scope layer;
-                            layer["this"] = top.box_location;
-                            layer[fn.args[0]] = heap.add(stack.top());
-                            stack.pop();
-                            fn.vm.scopes.push_back(layer);
-                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            stack.push(fn.vm.run());
-                            continue;
-                        }
-                    }
-                }
-            } else if (stack.top().type == STRING) {
-                SIDES();
-                stack.push(strValue(lhs.getStr() + rhs.getStr()));
-            } else {
-                stack.top().error("expected either an instance or a number.");
-            }
+            BASIC_OPERATION(-, "operator_subtract");
+            
         } else if (OP == OP_MULTIPLY) {
-            if (stack.top().type == INTIGER || stack.top().type == FLOAT) {
-                BASIC_OPERATION(*);
-            } else if (stack.top().type == INSTANCE) {
-                TOP();
-                auto it = top.members.find("operator_multiply");
-                if (it != top.members.end()) {
-                    if (heap.get(it->second).type == FUNCTION) {
-                        auto fn = heap.fn_get(heap.get(it->second).getFun());
-                        if (fn.args.size() == 1) {
-                            Scope layer;
-                            layer["this"] = top.box_location;
-                            layer[fn.args[0]] = heap.add(stack.top());
-                            stack.pop();
-                            fn.vm.scopes.push_back(layer);
-                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            stack.push(fn.vm.run());
-                            continue;
-                        }
-                    }
-                }
-            } else if (stack.top().type == STRING) {
-                SIDES();
-                stack.push(strValue(lhs.getStr() + rhs.getStr()));
-            } else {
-                stack.top().error("expected either an instance or a number.");
-            }
+            BASIC_OPERATION(*, "operator_multiply");
+            
         } else if (OP == OP_MODULO) {
             SIDES();
             stack.push(intValue(lhs.getInt() % rhs.getInt()));
