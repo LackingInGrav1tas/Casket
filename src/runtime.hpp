@@ -60,7 +60,7 @@ do { \
 } while (0)
 
     for (; ip < opcode.size(); ip++) {
-        //std::cout << "#: " << ip << "  type: " << OP << std::endl;
+        // std::cout << "#: " << ip << "  type: " << OP << std::endl;
         if (OP == OP_CONSTANT) {
             stack.push(INSTRUCTION.value);
 
@@ -120,12 +120,86 @@ do { \
 
 
         } else if (OP == OP_ADD) {
-            // if (stack.top().type == INTIGER || stack.top().type == FLOAT) 
-            BASIC_OPERATION(+);
+            if (stack.top().type == INTIGER || stack.top().type == FLOAT) {
+                BASIC_OPERATION(+);
+            } else if (stack.top().type == INSTANCE) {
+                TOP();
+                auto it = top.members.find("operator_add");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 1) {
+                            Scope layer;
+                            layer["this"] = top.box_location;
+                            layer[fn.args[0]] = heap.add(stack.top());
+                            stack.pop();
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            stack.push(fn.vm.run());
+                            continue;
+                        }
+                    }
+                }
+            } else if (stack.top().type == STRING) {
+                SIDES();
+                stack.push(strValue(lhs.getStr() + rhs.getStr()));
+            } else {
+                stack.top().error("expected either an instance, string, or number.");
+            }
         } else if (OP == OP_SUBTRACT) {
-            BASIC_OPERATION(-);
+            if (stack.top().type == INTIGER || stack.top().type == FLOAT) {
+                BASIC_OPERATION(-);
+            } else if (stack.top().type == INSTANCE) {
+                TOP();
+                auto it = top.members.find("operator_subtract");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 1) {
+                            Scope layer;
+                            layer["this"] = top.box_location;
+                            layer[fn.args[0]] = heap.add(stack.top());
+                            stack.pop();
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            stack.push(fn.vm.run());
+                            continue;
+                        }
+                    }
+                }
+            } else if (stack.top().type == STRING) {
+                SIDES();
+                stack.push(strValue(lhs.getStr() + rhs.getStr()));
+            } else {
+                stack.top().error("expected either an instance or a number.");
+            }
         } else if (OP == OP_MULTIPLY) {
-            BASIC_OPERATION(*);
+            if (stack.top().type == INTIGER || stack.top().type == FLOAT) {
+                BASIC_OPERATION(*);
+            } else if (stack.top().type == INSTANCE) {
+                TOP();
+                auto it = top.members.find("operator_multiply");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 1) {
+                            Scope layer;
+                            layer["this"] = top.box_location;
+                            layer[fn.args[0]] = heap.add(stack.top());
+                            stack.pop();
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            stack.push(fn.vm.run());
+                            continue;
+                        }
+                    }
+                }
+            } else if (stack.top().type == STRING) {
+                SIDES();
+                stack.push(strValue(lhs.getStr() + rhs.getStr()));
+            } else {
+                stack.top().error("expected either an instance or a number.");
+            }
         } else if (OP == OP_MODULO) {
             SIDES();
             stack.push(intValue(lhs.getInt() % rhs.getInt()));
@@ -148,7 +222,27 @@ do { \
                     rhs.error("invalid type for operation"); 
                 }
             } else {
-                lhs.error("invalid type for operation"); 
+                if (stack.top().type == INSTANCE) {
+                    TOP();
+                    auto it = top.members.find("operator_add");
+                    if (it != top.members.end()) {
+                        if (heap.get(it->second).type == FUNCTION) {
+                            auto fn = heap.fn_get(heap.get(it->second).getFun());
+                            if (fn.args.size() == 1) {
+                                Scope layer;
+                                layer["this"] = top.box_location;
+                                layer[fn.args[0]] = heap.add(stack.top());
+                                stack.pop();
+                                fn.vm.scopes.push_back(layer);
+                                fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                                stack.push(fn.vm.run());
+                                continue;
+                            }
+                        }
+                    }
+                } else {
+                    stack.top().error("expected either an instance or a number.");
+                }
             }
 
         } else if (OP == OP_MORE) {
@@ -344,6 +438,19 @@ do { \
                 }
             }
             if (!found) error("run-time error: couldn't find class " + opcode[ip].lexeme + " in scope.");
+
+            for (int i = 0; i < opcode[ip].i; i++) {
+                Value value = stack.top();
+                stack.pop();
+                std::string member = stack.top().getIden();
+                stack.pop();
+                if (templt.members.find(member) != templt.members.end()) {
+                    // std::cout << (value.type == STRING ? "is str: " + member : "not str: " + member) << std::endl;
+                    templt.members[member] = value;
+                } else {
+                    error("run-time error: member " + member + " does not exist.");
+                }
+            }
 
             stack.push(instanceValue(templt));
         }

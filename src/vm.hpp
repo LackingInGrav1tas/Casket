@@ -91,10 +91,12 @@ struct Machine {
                 std::cout << "OP_GET_MEMBER";
             } else if (OP.op == OP_CREATE_INST) {
                 std::cout << "OP_CREATE_INST(" << OP.lexeme << ")";
+            } else if (OP.op == OP_RETURN_POP) {
+                std::cout << "OP_RETURN_POP";
             } else {
                 std::cout << OP.op;
             }
-            std::cout << std::endl;
+            std::cout << "  --  " << OP.op << std::endl;
         }
     }
 

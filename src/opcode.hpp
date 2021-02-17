@@ -6,57 +6,57 @@
 #include <string>
 
 enum Opcode {
-    OP_BEGIN_SCOPE,
-    OP_END_SCOPE,
+    OP_BEGIN_SCOPE=0,
+    OP_END_SCOPE=1,
     
-    OP_CONSTANT,
+    OP_CONSTANT=2,
 
-    OP_ADD,
-    OP_SUBTRACT,
-    OP_MULTIPLY,
-    OP_DIVIDE,
-    OP_MODULO,
+    OP_ADD=3,
+    OP_SUBTRACT=4,
+    OP_MULTIPLY=5,
+    OP_DIVIDE=6,
+    OP_MODULO=7,
 
-    OP_NEGATE,
-    OP_NOT,
+    OP_NEGATE=8,
+    OP_NOT=9,
     
-    OP_AND,
-    OP_OR,
+    OP_AND=10,
+    OP_OR=11,
 
-    OP_LESS,
-    OP_MORE,
-    OP_LESS_EQ,
-    OP_MORE_EQ,
-    OP_EQUALITY,
-    OP_NOT_EQUAL,
+    OP_LESS=12,
+    OP_MORE=13,
+    OP_LESS_EQ=14,
+    OP_MORE_EQ=15,
+    OP_EQUALITY=16,
+    OP_NOT_EQUAL=17,
 
-    OP_SET_VARIABLE,
-    OP_EDIT_VARIABLE,
-    OP_GET_VARIABLE,
+    OP_SET_VARIABLE=18,
+    OP_EDIT_VARIABLE=19,
+    OP_GET_VARIABLE=20,
 
-    OP_REFERENCE,
-    OP_DEREFERENCE,
+    OP_REFERENCE=21,
+    OP_DEREFERENCE=22,
 
-    OP_CALL_FN,
+    OP_CALL_FN=23,
 
-    OP_COPY,
+    OP_COPY=24,
 
-    OP_JUMP_FALSE,
-    OP_JUMP,
+    OP_JUMP_FALSE=25,
+    OP_JUMP=26,
 
-    OP_RETURN_POP,
-    OP_PRINT_POP,
+    OP_RETURN_POP=27,
+    OP_PRINT_POP=28,
 
-    OP_LABEL,
-    OP_GOTO_LABEL,
-    OP_ERROR,
+    OP_LABEL=29,
+    OP_GOTO_LABEL=30,
+    OP_ERROR=31,
 
-    OP_DECL_CLASS,
-    OP_CREATE_INST,
-    OP_GET_MEMBER,
+    OP_DECL_CLASS=32,
+    OP_CREATE_INST=33,
+    OP_GET_MEMBER=34,
 
-    OP_INDEX,
-    OP_CREATE_LIST,
+    OP_INDEX=35,
+    OP_CREATE_LIST=36,
 };
 
 struct OpcodeObject {
@@ -108,10 +108,11 @@ OpcodeObject DeclClassOpcode(std::string classname, int i) {
     return o;
 }
 
-OpcodeObject InstanceOpcode(std::string name) {
+OpcodeObject InstanceOpcode(std::string name, int i = 0) {
     OpcodeObject o;
     o.op = OP_CREATE_INST;
     o.lexeme = name;
+    o.i = i;
     return o;
 }
 

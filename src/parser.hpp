@@ -29,6 +29,7 @@ static int getPrecedence(Type t) {
         case Type::e_pow         : return 8;
         case Type::e_lbracket    : return 9;
         case Type::e_lsqrbracket : return 9;
+        case Type::e_lcrlbracket : return 9;
         case Type::e_number      : return 9; // inst.member
         default                  : return 0;
     }
@@ -46,6 +47,26 @@ void Machine::init(Generator &gen, bool fn_parsing) {
     bool exempt = false;
     static int loc = -1;
     heap.init();
+
+    // <stl>
+
+    ClassTemplate str_template;
+    str_template.members["str"] = nullValue();
+    Function string_to_str;
+    string_to_str.vm.opcode = {
+        newOpcode(OP_BEGIN_SCOPE),
+        OpConstant(idenValue("this")),
+        newOpcode(OP_GET_VARIABLE),
+        OpConstant(idenValue("str")),
+        newOpcode(OP_GET_MEMBER),
+        newOpcode(OP_RETURN_POP),
+        newOpcode(OP_END_SCOPE),
+    };
+    str_template.members["to_string"] = funValue(heap.fn_add(string_to_str));
+    templates.push_back(std::map<std::string, ClassTemplate>());
+    templates.back()["String"] = str_template;
+
+    // </stl>
 
     auto ADV = [&]()->Token {
         loc++;
@@ -130,7 +151,34 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             NEXT();
             if (current.type != Type::e_symbol || invalidIdentifier(current.value))
                 error("parsing error: expected a valid class name");
-            opcode.push_back(InstanceOpcode(current.value));
+            if (ADV().type == Type::e_lbracket) {
+                int i = 0;
+                if (gen.peek_next_token().type != Type::e_rbracket) {
+                    while (1) {
+                        i++;
+                        if (PEEK().type != Type::e_symbol || invalidIdentifier(PEEK().value))
+                            error("parsing error: expected a valid identifer  token: " + PEEK().toStr());
+                        PUSHC(idenValue(PEEK().value));
+                        ADV();
+                        if (ADV().value != "=") {
+                            std::cout << "'" << gen.token_itr_->value << "'" << std::endl;
+                            error("parsing error: expected '='  token: " + gen.token_itr_->toStr());
+                        }
+                        expression(2);
+                        NEXT();
+                        if CASE(Type::e_comma) {
+                            // nada
+                        } else if CASE(Type::e_rbracket) {
+                            break;
+                        }
+                    }
+                } else {
+                    ADV();
+                }
+                opcode.push_back(InstanceOpcode(current.value, i));
+            } else {
+                error("parsing error: expected a ')'  token: " + gen.token_itr_->toStr());
+            }
 
         } else if (current.type == Type::e_symbol && current.value == "if") {
             if (gen.peek_next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen.peek_next_token().toStr());
@@ -248,7 +296,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             vm.init(gen, true);
             fn.vm = vm;
             int fn_loc = heap.fn_add(fn);
-            std::cout << "function stored @ " << fn_loc << ":" << std::endl;
+            // std::cout << "function stored @ " << fn_loc << ":" << std::endl;
             PUSHC(funValue(fn_loc));
         } else if (current.type == Type::e_symbol && current.value == "&") {
             expression(8);
@@ -386,7 +434,6 @@ void Machine::init(Generator &gen, bool fn_parsing) {
 
                     case Type::e_number: {
                         if (current.value == ".") {
-                            // here ;
                             NEXT();
                             if (current.type != Type::e_symbol || invalidIdentifier(current.value))
                                 error("parsing error: expected an identifier  token: " + current.toStr());
@@ -395,6 +442,13 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                         } else {
                             error("parsing error: expected a semicolon -- 390.");
                         }
+                    }
+
+                    case Type::e_lcrlbracket: {
+                        // here
+                        if (current.type != Type::e_symbol || invalidIdentifier(current.value))
+                            error("parsing error: expected a valid class name");
+                        opcode.push_back(InstanceOpcode(current.value));
                     }
                 }
             }
