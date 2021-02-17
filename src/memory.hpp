@@ -90,6 +90,17 @@ std::string Value::toString() {
             }
             return final + ")";
         }
+        case INSTANCE: {
+            std::string s = "instance{";
+            for (auto it = members.begin(); it != members.end(); it++) {
+                s += it->first + "=" + heap.get(it->second).toString() + ", ";
+            }
+            if (s.back() == ' ') {
+                s.pop_back();
+                s.pop_back();
+            }
+            return s + "}";
+        }
     }
     return "";
 }

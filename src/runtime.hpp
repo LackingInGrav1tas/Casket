@@ -114,7 +114,7 @@ do { \
             scopes.push_back(std::map<std::string, size_t>());
             templates.push_back(std::map<std::string, ClassTemplate>());
         } else if (OP == OP_END_SCOPE) {
-            if (scopes.size() == 0) error("run-time error: scope underflow");
+            if (scopes.size() == 0) error("run-time error: scope underflow - end_scope");
             scopes.pop_back();
             templates.pop_back();
 
@@ -205,7 +205,7 @@ do { \
             stack.push(intValue(lhs.getInt() % rhs.getInt()));
         } else if (OP == OP_DIVIDE) {
             SIDES();
-            if (lhs.type == FLOAT) {
+            if (lhs.type == FLOAT && ( rhs.type == FLOAT || rhs.type == INTIGER )) {
                 if (rhs.type == FLOAT) {
                     stack.push(floatValue( lhs.getFloat() / rhs.getFloat() ));
                 } else if (rhs.type == INTIGER) {
@@ -213,7 +213,7 @@ do { \
                 } else {
                     rhs.error("invalid type for operation"); 
                 }
-            } else if (lhs.type == INTIGER) {
+            } else if (lhs.type == INTIGER && ( rhs.type == FLOAT || rhs.type == INTIGER )) {
                 if (rhs.type == FLOAT) {
                     stack.push(floatValue( lhs.getInt() / rhs.getFloat() ));
                 } else if (rhs.type == INTIGER) {
@@ -222,17 +222,24 @@ do { \
                     rhs.error("invalid type for operation"); 
                 }
             } else {
-                if (stack.top().type == INSTANCE) {
-                    TOP();
-                    auto it = top.members.find("operator_add");
+                if (lhs.type == INSTANCE || rhs.type == INSTANCE) {
+                    Value top;
+                    Value arg;
+                    if (lhs.type == INSTANCE) {
+                        top = lhs;
+                        arg = rhs;
+                    } else {
+                        top = rhs;
+                        arg = lhs;
+                    }
+                    auto it = top.members.find("operator_divide");
                     if (it != top.members.end()) {
                         if (heap.get(it->second).type == FUNCTION) {
                             auto fn = heap.fn_get(heap.get(it->second).getFun());
                             if (fn.args.size() == 1) {
                                 Scope layer;
                                 layer["this"] = top.box_location;
-                                layer[fn.args[0]] = heap.add(stack.top());
-                                stack.pop();
+                                layer[fn.args[0]] = heap.add(arg);
                                 fn.vm.scopes.push_back(layer);
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                                 stack.push(fn.vm.run());
@@ -240,8 +247,9 @@ do { \
                             }
                         }
                     }
+                    lhs.error("expected either an instance or a number.");
                 } else {
-                    stack.top().error("expected either an instance or a number.");
+                    lhs.error("expected either an instance or a number.");
                 }
             }
 

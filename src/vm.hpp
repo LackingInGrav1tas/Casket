@@ -93,6 +93,8 @@ struct Machine {
                 std::cout << "OP_CREATE_INST(" << OP.lexeme << ")";
             } else if (OP.op == OP_RETURN_POP) {
                 std::cout << "OP_RETURN_POP";
+            } else if (OP.op == OP_DIVIDE) {
+                std::cout << "OP_DIVIDE";
             } else {
                 std::cout << OP.op;
             }
