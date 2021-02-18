@@ -1,5 +1,5 @@
-#ifndef PARSER_HPP
-#define PARSER_HPP
+#ifndef PARSERV2
+#define PARSERV2
 
 #include <functional>
 
@@ -41,133 +41,49 @@ static bool invalidIdentifier(std::string id) {
     id == "label" || id == "else" || id == "class" || id == "inst" || id == "this";
 }
 
-
 void Machine::init(Generator &gen, bool fn_parsing) {
     ip = 0;
-    bool exempt = false;
-    static int loc = -1;
     heap.init();
-
-    // <stl>
-
-    ClassTemplate str_template;
-    str_template.members["str"] = nullValue();
-    Function string_to_str;
-    string_to_str.vm.opcode = {
-        newOpcode(OP_BEGIN_SCOPE),
-        OpConstant(idenValue("this")),
-        newOpcode(OP_GET_VARIABLE),
-        OpConstant(idenValue("str")),
-        newOpcode(OP_GET_MEMBER),
-        newOpcode(OP_RETURN_POP),
-        newOpcode(OP_END_SCOPE),
-    };
-    str_template.members["to_string"] = funValue(heap.fn_add(string_to_str));
-    templates.push_back(std::map<std::string, ClassTemplate>());
-    templates.back()["String"] = str_template;
-
-    // </stl>
-
-    auto ADV = [&]()->Token {
-        loc++;
-        return gen.next_token();
-    };
 
     #define NEXT() \
         if (gen.peek_next_token().is_error()) \
             error("parsing error: " + gen.peek_next_token().toStr()); \
-        Token current = ADV()
-    #define CASE(t) (current.type == t)
-    #define PEEK() (gen.peek_next_token())
+        Token current = gen.next_token();
+
+    #define SEMICOLON() \
+        if (gen.next_token().value != ";") { \
+            error("parsing error: expected a ';'  token: " + (gen.token_itr_-1)->toStr()); \
+        }
+    
     #define PUSH(arg) opcode.push_back(newOpcode(arg))
     #define PUSHC(arg) opcode.push_back(OpConstant(arg))
+    #define CASE(t) (current.type == t)
 
-    std::function<void(int)> expression = [&](int p)->void {
-        std::cout << "expression(" << p << ")" << std::endl;
-        NEXT();
+    std::function<void(int)> expression;
+
+    std::function<void(int)> exp = [&](int p)->void {
+        Token current = *(gen.token_itr_-1);
+        // std::cout << "expression(" << current.toStr() << ")" << std::endl;
         if CASE(Type::e_lbracket) { // group
             expression(1);
             if (gen.token_itr_->type != Type::e_rbracket) {
-                error("parsing error: expected a ')'  token: " + PEEK().toStr());
+                error("parsing error: expected a ')'  token: " + gen.peek_next_token().toStr());
             }
-            ADV();
-        } else if CASE(Type::e_lcrlbracket) {
-            std::cout << "{" << std::endl;
-            PUSH(OP_BEGIN_SCOPE);
-            while (1) {
-                expression(1);
-                auto v = ADV();
-                if (v.value != ";" && !exempt) error("parsing error: expected a semicolon  token: " + v.toStr());
-                exempt = false;
-                std::cout << "peek(): " << PEEK().toStr() << std::endl;
-                if (gen.peek_next_token().type == Type::e_rcrlbracket) break;
-            }
-            PUSH(OP_END_SCOPE);
-            ADV();
-            exempt = true;
-            return;
-        } else if (current.type == Type::e_symbol && current.value == "class") {
-            std::cout << "class" << std::endl;
-            NEXT();
-            if (current.type != Type::e_symbol || invalidIdentifier(current.value)) {
-                error("parsing error: expected a valid identifier  token: " + current.toStr());
-            }
-            std::string name = current.value;
-            if (ADV().type != Type::e_lcrlbracket) {
-                error("parsing error: expected a valid identifier  token: " + PEEK().toStr());
-            }
-
-            int i = 0;
-            while (1) {
-                if (PEEK().type == Type::e_rcrlbracket) {
-                    break;
-                } else {
-                    i++;
-                    Token tname = ADV();
-                    if (tname.type != Type::e_symbol || invalidIdentifier(tname.value)) {
-                        error("parsing error: expected an identifier  !!  token: " + tname.toStr());
-                    }
-                    PUSHC(idenValue(tname.value));
-                    NEXT();
-                    if CASE(Type::e_colon) {
-                        expression(1);
-                        NEXT();
-                        if (current.value == ";") {
-                            // nada
-                        } else if CASE(Type::e_rbracket) {
-                            break;
-                        }
-                    } else if (current.value != ";") {
-                        error("parsing error: expected either ';' or ':'  token: " + current.toStr());
-                    } else {
-                        PUSHC(nullValue());
-                    }
-                }
-            }
-
-            opcode.push_back(DeclClassOpcode(name, i));
-
-            exempt = true;
-
-            ADV();
-
-            return;
+            gen.next_token();
         } else if (current.type == Type::e_symbol && current.value == "inst") { // until stl
-            std::cout << "inst" << std::endl;
             NEXT();
             if (current.type != Type::e_symbol || invalidIdentifier(current.value))
                 error("parsing error: expected a valid class name  token: " + current.toStr());
-            if (ADV().type == Type::e_lbracket) {
+            if (gen.next_token().type == Type::e_lbracket) {
                 int i = 0;
                 if (gen.peek_next_token().type != Type::e_rbracket) {
                     while (1) {
                         i++;
-                        if (PEEK().type != Type::e_symbol || invalidIdentifier(PEEK().value))
-                            error("parsing error: expected a valid identifer  token: " + PEEK().toStr());
-                        PUSHC(idenValue(PEEK().value));
-                        ADV();
-                        if (ADV().value != "=") {
-                            std::cout << "'" << gen.token_itr_->value << "'" << std::endl;
+                        if (gen.peek_next_token().type != Type::e_symbol || invalidIdentifier(gen.peek_next_token().value))
+                            error("parsing error: expected a valid identifer  token: " + gen.peek_next_token().toStr());
+                        PUSHC(idenValue(gen.peek_next_token().value));
+                        gen.next_token();
+                        if (gen.next_token().value != "=") {
                             error("parsing error: expected '='  token: " + gen.token_itr_->toStr());
                         }
                         expression(2);
@@ -179,45 +95,12 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                         }
                     }
                 } else {
-                    ADV();
+                    gen.next_token();
                 }
                 opcode.push_back(InstanceOpcode(current.value, i));
             } else {
                 error("parsing error: expected a ')'  token: " + gen.token_itr_->toStr());
             }
-
-        } else if (current.type == Type::e_symbol && current.value == "if") {
-            std::cout << "if" << std::endl;
-            if (gen.peek_next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen.peek_next_token().toStr());
-            // it will find a grouping and take care of the matching ')'
-            expression(2);
-
-            PUSH(OP_ERROR);
-            int size = opcode.size();
-
-            expression(1);
-
-            //std::cout << "\nvalue = " << gen.token_itr_->value << std::endl;
-            if (gen.token_itr_->value == "else") {
-                ADV();
-                PUSH(OP_ERROR);
-                int elsesize = opcode.size();
-
-                opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
-
-                expression(1);
-
-                opcode[elsesize-1] = jumpOpcode(OP_JUMP, opcode.size() - elsesize);
-            } else {
-                opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
-            }
-
-            return;
-        } else if (current.type == Type::e_symbol && current.value == "while") {
-            if (gen.peek_next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen.peek_next_token().toStr());
-            // it will find a grouping and take care of the matching ')'
-            expression(2);
-
 
         } else if CASE(Type::e_sub) {
             expression(7);
@@ -225,59 +108,15 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         } else if CASE(Type::e_exclamation) {
             expression(7);
             PUSH(OP_NOT);
-        } else if (current.type == Type::e_symbol && current.value == "set") {
-            std::cout << "set" << std::endl;
-            NEXT();
-            std::string id = current.value;
-            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
-                error("parsing error: invalid identifier  token: " + current.toStr());
-            if (ADV().value != "=")
-                error("parsing error: expected '='  token: " + gen.token_itr_->toStr());
-
-            expression(1);
-            opcode.push_back(spOpcode(OP_SET_VARIABLE, id));
-            
-            return;
-        } else if (current.type == Type::e_symbol && current.value == "label") {
-            NEXT();
-            std::string id = current.value;
-            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
-                error("parsing error: invalid identifier  token: " + current.toStr());
-
-            OpcodeObject op;
-            op.lexeme = id;
-            op.op = OP_LABEL;
-            opcode.push_back(op);
-            return;
-        } else if (current.type == Type::e_symbol && current.value == "goto") {
-            NEXT();
-            std::string id = current.value;
-            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
-                error("parsing error: invalid identifier  token: " + current.toStr());
-
-            OpcodeObject op;
-            op.lexeme = id;
-            op.op = OP_GOTO_LABEL;
-            opcode.push_back(op);
-            return;
-
         } else if (current.type == Type::e_symbol && current.value == "true") {
             PUSHC(boolValue(true));
         } else if (current.type == Type::e_symbol && current.value == "false") {
             PUSHC(boolValue(false));
         } else if (current.type == Type::e_symbol && current.value == "null") {
             PUSHC(nullValue());
-        } else if (current.type == Type::e_symbol && current.value == "print") { // until stl
-            expression(2);
-            PUSH(OP_PRINT_POP);
-            return;
-        } else if (current.type == Type::e_symbol && current.value == "return") { // until stl
-            expression(2);
-            PUSH(OP_RETURN_POP);
-            return;
         } else if (current.type == Type::e_symbol && current.value == "fn") {
-            std::cout << "fn" << std::endl;
-            if (ADV().type != Type::e_lbracket) error("parsing error: expected a '(' after 'fn'  token: " + gen.token_itr_->toStr());
+            // std::cout << "fn" << std::endl;
+            if (gen.next_token().type != Type::e_lbracket) error("parsing error: expected a '(' after 'fn'  token: " + gen.token_itr_->toStr());
             Function fn;
             while (1) {
                 NEXT();
@@ -302,8 +141,10 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                 error("parsing error: expected a block  token: " + gen.peek_next_token().toStr());
             }
             Machine vm;
+            // std::cout << "next: " << gen.peek_next_token().toStr() << std::endl;
             vm.init(gen, true);
-            std::cout << "done with it!" << std::endl;
+            // std::cout << "done with it!" << std::endl;
+            // vm.disassemble();
             fn.vm = vm;
             int fn_loc = heap.fn_add(fn);
             // std::cout << "function stored @ " << fn_loc << ":" << std::endl;
@@ -341,6 +182,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         } else {
             error("parsing error: expected an expression  token: " + current.toStr());
         }
+        // std::cout << "peeking for precedence: " << gen.peek_next_token().toStr() << std::endl;
         while (p <= getPrecedence(gen.peek_next_token().type)) {
             NEXT();
             if (current.value == ".") {
@@ -398,11 +240,9 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                     }
                     case Type::e_eq: {
                         if (current.value == "==") {
-                            std::cout << "==" << std::endl;
                             expression(getPrecedence(Type::e_eq));
                             PUSH(OP_EQUALITY);
                         } else {
-                            std::cout << "=" << std::endl;
                             expression(2);
                             PUSH(OP_EDIT_VARIABLE);
                         }
@@ -421,14 +261,14 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                                 i++;
                                 expression(2);
                                 NEXT();
-                                if CASE(Type::e_comma) {
+                                if (current.type == Type::e_comma) {
                                     // nada
-                                } else if CASE(Type::e_rbracket) {
+                                } else if (current.type == Type::e_rbracket) {
                                     break;
                                 }
                             }
                         } else {
-                            ADV();
+                            gen.next_token();
                         }
                         opcode.push_back(callOpcode(i));
                         break;
@@ -459,20 +299,150 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             }
         }
     };
-    PUSH(OP_BEGIN_SCOPE);
-    while (loc < (int)gen.size()-1) {
-        expression(1);
-        if (fn_parsing) break;
-        if (!exempt) {
+
+    expression = [&](int p)->void {
+        gen.next_token();
+        exp(p);
+    };
+
+    std::function<void()> declaration = [&]() -> void {
+        Token check = gen.next_token();
+        // std::cout << "declaration(" << check.toStr() << ")" << std::endl;
+        if (check.value == "set") {
             NEXT();
-            if (current.value != ";") 
-                error("parsing error: expected a semicolon   token: " + current.toStr());
-            if (fn_parsing) break;
-        } else
-            exempt = false;
-        std::cout << ";" << std::endl;
+            std::string id = current.value;
+            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
+                error("parsing error: invalid identifier  token: " + current.toStr());
+            if (gen.next_token().value != "=")
+                error("parsing error: expected '='  token: " + gen.token_itr_->toStr());
+
+            expression(1);
+
+            SEMICOLON();
+            
+            opcode.push_back(spOpcode(OP_SET_VARIABLE, id));
+        } else if (check.value == "if") {
+            if (gen.next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen.peek_next_token().toStr());
+            
+            expression(2);
+
+            if (gen.next_token().value != ")") error("parsing error: expected a ')'  token: " + gen.token_itr_->toStr());
+
+            PUSH(OP_ERROR);
+            int size = opcode.size();
+
+            declaration();
+
+            //std::cout << "\nvalue = " << gen.token_itr_->value << std::endl;
+            if (gen.token_itr_->value == "else") {
+                gen.next_token();
+                PUSH(OP_ERROR);
+                int elsesize = opcode.size();
+
+                opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
+
+                declaration();
+
+                opcode[elsesize-1] = jumpOpcode(OP_JUMP, opcode.size() - elsesize);
+            } else {
+                opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
+            }
+        } else if (check.value == "class") {
+            NEXT();
+            if (current.type != Type::e_symbol || invalidIdentifier(current.value)) {
+                error("parsing error: expected a valid identifier  token: " + current.toStr());
+            }
+            std::string name = current.value;
+            if (gen.next_token().type != Type::e_lcrlbracket) {
+                error("parsing error: expected a valid identifier  token: " + gen.peek_next_token().toStr());
+            }
+
+            int i = 0;
+            while (1) {
+                if (gen.peek_next_token().type == Type::e_rcrlbracket) {
+                    break;
+                } else {
+                    i++;
+                    Token tname = gen.next_token();
+                    if (tname.type != Type::e_symbol || invalidIdentifier(tname.value)) {
+                        error("parsing error: expected an identifier  !!  token: " + tname.toStr());
+                    }
+                    PUSHC(idenValue(tname.value));
+                    NEXT();
+                    if CASE(Type::e_colon) {
+                        expression(1);
+                        NEXT();
+                        if (current.value == ";") {
+                            // nada
+                        } else if CASE(Type::e_rbracket) {
+                            break;
+                        }
+                    } else if (current.value != ";") {
+                        error("parsing error: expected either ';' or ':'  token: " + current.toStr());
+                    } else {
+                        PUSHC(nullValue());
+                    }
+                }
+            }
+
+            opcode.push_back(DeclClassOpcode(name, i));
+
+            // exempt = true;
+
+            gen.next_token();
+        } else if (check.value == "{") {
+            opcode.push_back(newOpcode(OP_BEGIN_SCOPE));
+            while (!gen.finished()) {
+                declaration();
+                if (gen.peek_next_token().value == "}") {
+                    gen.next_token();
+                    break;
+                }
+            }
+            if (gen.finished()) error("parsing error: unclosed bracket");
+            opcode.push_back(newOpcode(OP_END_SCOPE));
+        } else if (check.value == "label") {
+            NEXT();
+            std::string id = current.value;
+            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
+                error("parsing error: invalid identifier  token: " + current.toStr());
+
+            OpcodeObject op;
+            op.lexeme = id;
+            op.op = OP_LABEL;
+            opcode.push_back(op);
+            SEMICOLON();
+        } else if (check.value == "goto") {
+            NEXT();
+            std::string id = current.value;
+            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
+                error("parsing error: invalid identifier  token: " + current.toStr());
+
+            OpcodeObject op;
+            op.lexeme = id;
+            op.op = OP_GOTO_LABEL;
+            opcode.push_back(op);
+            SEMICOLON();
+        } else if (check.value == "print") { // until stl
+            expression(2);
+            SEMICOLON();
+            PUSH(OP_PRINT_POP);
+        } else if (check.value == "return") { // until stl
+            expression(2);
+            SEMICOLON();
+            PUSH(OP_RETURN_POP);
+        } else {
+            exp(1);
+            SEMICOLON();
+        }
+    };
+
+    opcode.push_back(newOpcode(OP_BEGIN_SCOPE));
+    while (!gen.finished()) {
+        declaration();
+        if (fn_parsing) break;
     }
-    PUSH(OP_END_SCOPE);
+    opcode.push_back(newOpcode(OP_END_SCOPE));
 }
 
 #endif

@@ -1,5 +1,5 @@
 #include "vm.hpp"
-#include "parser.hpp"
+#include "parserv2.hpp"
 #include "lexertk.hpp"
 #include "runtime.hpp"
 
@@ -41,5 +41,6 @@ int main(int argc, char ** argv) {
             newOpcode(OP_PRINT_POP)
         }
     );*/
-    return vm.run().getInt();
+    int ret = vm.run().getInt();
+    return ret;
 }
