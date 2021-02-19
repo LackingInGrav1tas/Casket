@@ -13,7 +13,12 @@ typedef lexertk::generator Generator;
 typedef lexertk::token Token;
 typedef lexertk::token::token_type Type;
 
-static int getPrecedence(Type t) {
+static int getPrecedence(Type t, std::string s = "") {
+    if (s == "&") {
+        return 3;
+    } else if (s == "|") {
+        return 2;
+    }
     switch (t) {
         case Type::e_ne          : return 4;
         case Type::e_eq          : return 4;
@@ -183,7 +188,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             error("parsing error: expected an expression  token: " + current.toStr());
         }
         // std::cout << "peeking for precedence: " << gen.peek_next_token().toStr() << std::endl;
-        while (p <= getPrecedence(gen.peek_next_token().type)) {
+        while (p <= getPrecedence(gen.peek_next_token().type, gen.peek_next_token().value)) {
             NEXT();
             if (current.value == ".") {
                 NEXT();
@@ -191,6 +196,22 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                     error("parsing error: expected an identifier");
                 PUSHC(idenValue(current.value));
                 PUSH(OP_GET_MEMBER);
+            } else if (current.value == "&") {
+                if (gen.peek_next_token().value == "&") {
+                    gen.next_token();
+                    expression(2);
+                    PUSH(OP_AND);
+                } else {
+                    error("parsing error: expected a ';'  token: " + gen.peek_next_token().toStr());
+                }
+            } else if (current.value == "|") {
+                if (gen.peek_next_token().value == "|") {
+                    gen.next_token();
+                    expression(1);
+                    PUSH(OP_OR);
+                } else {
+                    error("parsing error: expected a ';'  token: " + gen.peek_next_token().toStr());
+                }
             } else {
                 switch (current.type) {
                     case Type::e_add: {

@@ -95,6 +95,10 @@ struct Machine {
                 std::cout << "OP_RETURN_POP";
             } else if (OP.op == OP_DIVIDE) {
                 std::cout << "OP_DIVIDE";
+            } else if (OP.op == OP_AND) {
+                std::cout << "OP_AND";
+            } else if (OP.op == OP_OR) {
+                std::cout << "OP_OR";
             } else {
                 std::cout << OP.op;
             }

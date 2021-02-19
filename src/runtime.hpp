@@ -184,7 +184,66 @@ do { \
             
         } else if (OP == OP_MODULO) {
             SIDES();
-            stack.push(intValue(lhs.getInt() % rhs.getInt()));
+            if (lhs.type == STRING) {
+                std::string converted;
+                if (rhs.type == INSTANCE) {
+                    auto it = rhs.members.find("to_string");
+                    if (it != rhs.members.end()) {
+                        if (heap.get(it->second).type == FUNCTION) {
+                            auto fn = heap.fn_get(heap.get(it->second).getFun());
+                            if (fn.args.size() == 0) {
+                                Scope layer;
+                                layer["this"] = rhs.box_location;
+                                fn.vm.scopes.push_back(layer);
+                                fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                                converted = fn.vm.run().getStr();
+                            } else {
+                                error("run-time error: invalid type for operation  object: " + rhs.toString());
+                            }
+                        } else {
+                            error("run-time error: invalid type for operation  object: " + rhs.toString());
+                        }
+                    } else {
+                        error("run-time error: invalid type for operation  object: " + rhs.toString());
+                    }
+                } else {
+                    converted = rhs.toString();
+                    if (converted.at(0) == '"') {
+                        converted = rhs.str;
+                    }
+                }
+                stack.push(strValue(lhs.getStr() + converted));
+            } else if (rhs.type == STRING) {
+                std::string converted;
+                if (lhs.type == INSTANCE) {
+                    auto it = lhs.members.find("to_string");
+                    if (it != lhs.members.end()) {
+                        if (heap.get(it->second).type == FUNCTION) {
+                            auto fn = heap.fn_get(heap.get(it->second).getFun());
+                            if (fn.args.size() == 0) {
+                                Scope layer;
+                                layer["this"] = lhs.box_location;
+                                fn.vm.scopes.push_back(layer);
+                                fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                                converted = fn.vm.run().getStr();
+                            } else {
+                                error("run-time error: invalid type for operation  object: " + lhs.toString());
+                            }
+                        } else {
+                            error("run-time error: invalid type for operation  object: " + lhs.toString());
+                        }
+                    } else {
+                        error("run-time error: invalid type for operation  object: " + lhs.toString());
+                    }
+                } else {
+                    converted = lhs.toString();
+                    if (converted.at(0) == '"') {
+                        converted = lhs.str;
+                    }
+                }
+                stack.push(strValue(converted + rhs.getStr()));
+            } else 
+                stack.push(intValue(lhs.getInt() % rhs.getInt()));
         } else if (OP == OP_DIVIDE) {
             SIDES();
             if (lhs.type == FLOAT && ( rhs.type == FLOAT || rhs.type == INTIGER )) {
