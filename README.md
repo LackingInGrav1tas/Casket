@@ -56,7 +56,6 @@ Hello, World!
 ```
 set a = 1;
 set b = &a;
-set c = &a;
 *b = *b + 1;
 print a;
 ```
