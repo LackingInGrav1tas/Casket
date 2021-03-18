@@ -116,4 +116,11 @@ OpcodeObject InstanceOpcode(std::string name, int i = 0) {
     return o;
 }
 
+OpcodeObject ListOpcode(int i) {
+    OpcodeObject o;
+    o.op = OP_CREATE_LIST;
+    o.i = i;
+    return o;
+}
+
 #endif

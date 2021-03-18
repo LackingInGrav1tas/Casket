@@ -184,6 +184,16 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             }
         } else if CASE(Type::e_string) {
             PUSHC(strValue(current.value));
+        } else if CASE(Type::e_lsqrbracket) {
+            int i = 0;
+            while (gen.peek_next_token().type != Type::e_rsqrbracket) {
+                expression(2);
+                std::cout << gen.peek_next_token().value << std::endl;
+                if (gen.peek_next_token().value == ",") gen.next_token();
+                i++;
+            }
+            gen.next_token();
+            opcode.push_back(ListOpcode(i));
         } else {
             error("parsing error: expected an expression  token: " + current.toStr());
         }

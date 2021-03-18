@@ -455,10 +455,13 @@ do { \
 
         else if (OP == OP_INDEX) {
             SIDES();
-            if (lhs.getStr().length() <= rhs.getInt()) {
-                error("run-time error: index " + std::to_string(rhs.getInt()) + " out of range.");
+            if (lhs.type == STRING) {
+                if (lhs.getStr().length() <= rhs.getInt()) error("run-time error: index " + std::to_string(rhs.getInt()) + " out of range.");
+                else stack.push(strValue(std::string(1, lhs.getStr().at(rhs.getInt()))));
+            } else if (lhs.type == LIST) {
+                stack.push(heap.get(lhs.list_locations[rhs.getInt()]));
             } else {
-                stack.push(strValue(std::string(1, lhs.getStr().at(rhs.getInt()))));
+                error("run-time error: cannot index a non-string, non-list object : " + lhs.toString());
             }
         }
 
@@ -502,6 +505,14 @@ do { \
             }
 
             stack.push(instanceValue(templt));
+        } else if (OP == OP_CREATE_LIST) {
+            Locations list;
+            for (int i = 0; i < opcode[ip].i; i++) {
+                TOP();
+                list.push_back(heap.add(top));
+            }
+            std::reverse(list.begin(), list.end());
+            stack.push(listValue(list));
         }
 
         /*else if (OP == OP_OK_FN) {

@@ -27,6 +27,26 @@ Bytecode interpreter written in C++.
 
 ```
 
+## Class Built-in Functions ##
+```to_string()```:
+Returns a string version, used in ```print```.
+
+```operator_add(rhs)```, ```operator_subtract(rhs)```, ```operator_multiply(rhs)```, ```operator_divide(rhs)```:
+Used with ```+```, ```-```, ```*```, ```/``` when the instance is on the left-hand side.
+
+## Data Types ##
+
+### Literals ###
+intiger: ```1```, ```2```, ```3```, etc.
+float: ```1.0```, ```1.1```, etc.
+str: ```"..."```
+boolean: ```true```, ```false```
+
+### Complex ###
+list: ```[...]```
+function: ```fn(...) {...}```
+instance: ```inst ClassName(...)```
+
 ## Example Code ##
 
 ### Classes ###
@@ -42,10 +62,7 @@ class Example {
     };
 }
 
-set instance = inst Example(msg="Hello");
-
-print instance + ", World!";
-
+print inst Example(msg="Hello") + ", World!";
 ```
 ```
 Hello, World!
