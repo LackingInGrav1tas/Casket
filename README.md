@@ -29,6 +29,8 @@ Bytecode interpreter written in C++.
 
 ## Example Code ##
 
+### Classes ###
+
 ```
 class Example {
     msg: "default value"; // default
@@ -42,9 +44,22 @@ class Example {
 
 set instance = inst Example(msg="Hello");
 
-instance = instance + ", World!";
+print instance + ", World!";
 
-if (true) {
-    print instance;
-}
+```
+```
+Hello, World!
+```
+
+### Pointers ###
+
+```
+set a = 1;
+set b = &a;
+set c = &a;
+*b = *b + 1;
+print a;
+```
+```
+2
 ```

@@ -101,6 +101,9 @@ std::string Value::toString() {
             }
             return s + "}";
         }
+        case POINTER: {
+            return "ptr(" + std::to_string(getPtr()) + ")";
+        }
     }
     return "";
 }
