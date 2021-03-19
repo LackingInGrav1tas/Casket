@@ -144,6 +144,12 @@ do { \
             templates.push_back(std::map<std::string, ClassTemplate>());
         } else if (OP == OP_END_SCOPE) {
             if (scopes.size() == 0) error("run-time error: scope underflow - end_scope");
+            auto s = scopes.back();
+
+            for (auto it = s.begin(); it != s.end(); it++) {
+                heap.dump(it->second);
+            }
+
             scopes.pop_back();
             templates.pop_back();
 
@@ -460,6 +466,25 @@ do { \
                 else stack.push(strValue(std::string(1, lhs.getStr().at(rhs.getInt()))));
             } else if (lhs.type == LIST) {
                 stack.push(heap.get(lhs.list_locations[rhs.getInt()]));
+            } else if (lhs.type == INSTANCE) {
+                auto it = lhs.members.find("index");
+                if (it != lhs.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 1) {
+                            Scope layer;
+                            layer["this"] = lhs.box_location;
+                            layer[fn.args[0]] = heap.add(rhs);
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            stack.push(fn.vm.run());
+                        } else {
+                            error("run-time error: cannot index a non-string, non-list object : " + lhs.toString());
+                        }
+                    }
+                } else {
+                    error("run-time error: cannot index a non-string, non-list object : " + lhs.toString());
+                }
             } else {
                 error("run-time error: cannot index a non-string, non-list object : " + lhs.toString());
             }

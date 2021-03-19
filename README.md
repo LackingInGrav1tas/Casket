@@ -31,6 +31,9 @@ Bytecode interpreter written in C++.
 ```to_string()```:
 Returns a string version, used in ```print```.
 
+```index(i)```:
+Used with ```<expr>[...]```
+
 ```operator_add(rhs)```, ```operator_subtract(rhs)```, ```operator_multiply(rhs)```, ```operator_divide(rhs)```:
 Used with ```+```, ```-```, ```*```, ```/``` when the instance is on the left-hand side.
 

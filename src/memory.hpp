@@ -3,6 +3,7 @@
 
 #include "value.hpp"
 #include "function.hpp"
+#include "flags.hpp"
 
 #include <map>
 
@@ -33,7 +34,15 @@ struct VirtualMemory {
         memory.erase(pos);
     }
     Value get(size_t pos) {
-        return memory[pos];
+        auto it = memory.find(pos);
+        if (flags::warnings) {
+            if (it != memory.end()) {
+                return it->second;
+            } else {
+                std::cerr << "warning: found hanging pointer (" << pos << "). make sure that there aren't any pointers to a variable declared in a block that has been moved out of scope." << std::endl;
+                return nullValue();
+            }
+        } else return (it == memory.end() ? nullValue() : it->second);
     }
 
     int fn_add(Function new_value) {

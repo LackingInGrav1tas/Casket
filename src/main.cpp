@@ -2,12 +2,19 @@
 #include "parserv2.hpp"
 #include "lexertk.hpp"
 #include "runtime.hpp"
+#include "flags.hpp"
 
 #include <fstream>
 #include <sstream>
 #include <iostream>
 
 int main(int argc, char ** argv) {
+    if (argc >= 3) {
+        if (std::string(argv[2]) == "t" || std::string(argv[2]) == "true") {
+            flags::warnings = true;
+        }
+    }
+
     std::ifstream file(argv[1]);
     std::stringstream buf;
     buf << file.rdbuf();

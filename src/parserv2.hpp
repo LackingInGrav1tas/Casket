@@ -344,8 +344,16 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             std::string id = current.value;
             if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
                 error("parsing error: invalid identifier  token: " + current.toStr());
-            if (gen.next_token().value != "=")
-                error("parsing error: expected '='  token: " + gen.token_itr_->toStr());
+            std::string nxt = gen.next_token().value;
+            if (nxt != "=") {
+                if (nxt == ";") {
+                    PUSHC(nullValue());
+                    opcode.push_back(spOpcode(OP_SET_VARIABLE, id));
+                    return;
+                } else 
+                    error("parsing error: expected '='  token: " + gen.token_itr_->toStr());
+            }
+                
 
             expression(1);
 
@@ -378,6 +386,8 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             } else {
                 opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
             }
+        } else if (check.value == "while") {
+
         } else if (check.value == "class") {
             NEXT();
             if (current.type != Type::e_symbol || invalidIdentifier(current.value)) {
