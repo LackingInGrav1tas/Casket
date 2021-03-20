@@ -9,9 +9,13 @@
 #include <iostream>
 
 int main(int argc, char ** argv) {
-    if (argc >= 3) {
-        if (std::string(argv[2]) == "t" || std::string(argv[2]) == "true") {
+
+    for (int i = 2; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "warn" || arg == "warnings" || arg == "warning" || arg == "w") {
             flags::warnings = true;
+        } else if (arg == "d" || arg == "debug") {
+            flags::debug = true;
         }
     }
 
@@ -21,33 +25,14 @@ int main(int argc, char ** argv) {
 
 
     lexertk::generator generator;
-    generator.next_token().type;
 
     if (!generator.process(buf.str())) error(std::string("Failed to lex: ") + argv[1]);
 
-    lexertk::helper::dump(generator);
-
     Machine vm;
     vm.init(generator);
-    vm.disassemble();
-    /*vm.init_og(
-        { 
-            /*newOpcode(OP_BEGIN_SCOPE),
-            OpConstant(strValue("hello, world! (but in a variable this time!)\n")),
-            setOpcode("var"),
-            OpConstant(idenValue("var")),
-            newOpcode(OP_REFERENCE),
-            newOpcode(OP_DEREFERENCE),
-            newOpcode(OP_PRINT_POP),
-            OpConstant(idenValue("var")),
-
-            newOpcode(OP_END_SCOPE)*\/
-            OpConstant(intValue(5)),
-            OpConstant(floatValue(2.34)),
-            newOpcode(OP_SUBTRACT),
-            newOpcode(OP_PRINT_POP)
-        }
-    );*/
-    int ret = vm.run().getInt();
-    return ret;
+    if (flags::debug) {
+        vm.disassemble();
+        lexertk::helper::dump(generator);
+    }
+    return vm.run().getInt();
 }
