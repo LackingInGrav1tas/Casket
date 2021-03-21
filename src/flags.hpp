@@ -4,6 +4,7 @@
 namespace flags {
     bool warnings = false;
     bool debug = false;
+    bool collect = false;
 }
 
 #endif

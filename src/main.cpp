@@ -12,11 +12,12 @@ int main(int argc, char ** argv) {
 
     for (int i = 2; i < argc; i++) {
         std::string arg = argv[i];
-        if (arg == "warn" || arg == "warnings" || arg == "warning" || arg == "w") {
+        if (arg == "warn" || arg == "warnings" || arg == "warning" || arg == "w")
             flags::warnings = true;
-        } else if (arg == "d" || arg == "debug") {
+        else if (arg == "d" || arg == "debug")
             flags::debug = true;
-        }
+        else if (arg == "c" || arg == "collect")
+            flags::collect = true;
     }
 
     std::ifstream file(argv[1]);

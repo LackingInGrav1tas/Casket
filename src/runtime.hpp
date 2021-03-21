@@ -146,7 +146,7 @@ do { \
             if (scopes.size() == 0) error("run-time error: scope underflow - end_scope");
             auto s = scopes.back();
 
-            for (auto it = s.begin(); it != s.end(); it++) {
+            for (auto it = s.begin(); it != s.end(); it++) { // garbage collection
                 heap.dump(it->second);
             }
 

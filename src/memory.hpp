@@ -6,6 +6,28 @@
 #include "flags.hpp"
 
 #include <map>
+#include <set>
+
+struct GarbageCollector {
+    std::set<size_t> pointers = {};
+
+    void mark(size_t loc) {
+        pointers.insert(loc);
+    }
+
+    bool in_use(size_t loc) {
+        return pointers.find(loc) != pointers.end();
+    }
+
+    bool remove(size_t loc) {
+        if (in_use(loc)) {
+            pointers.erase(pointers.find(loc));
+            return true;
+        }
+        return false;
+    }
+
+} gc;
 
 struct VirtualMemory {
     std::map<size_t, Value> memory;
@@ -21,16 +43,32 @@ struct VirtualMemory {
     }
 
     int add(Value new_value) {
+        if (new_value.type == POINTER) {
+            gc.mark(new_value.getPtr());
+        }
         memory[current] = new_value;
         memory[current].box_location = current;
         current++;
         return current-1;
     }
     void change(size_t pos, Value new_value) {
+        if (new_value.type == POINTER) {
+            gc.mark(new_value.getPtr());
+        }
         memory[pos] = new_value;
         memory[pos].box_location = pos;
     }
     void dump(size_t pos) {
+        if (flags::collect) {
+            if (gc.in_use(pos)) return;
+            if (memory[pos].type == POINTER) {
+                if (gc.remove(memory[pos].getPtr())) {
+                    dump(memory[pos].getPtr());
+                }
+            }
+        }
+        if (memory[pos].type == FUNCTION)
+            fn_memory.erase(pos);
         memory.erase(pos);
     }
     Value get(size_t pos) {
