@@ -81,7 +81,7 @@ struct Value {
 
     inline int getBoxLoc() {
         if (box_location == -1) {
-            error("expected an identifier");
+            error("expected a boxed value");
         } else {
             return box_location;
         }

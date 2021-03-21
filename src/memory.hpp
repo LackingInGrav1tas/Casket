@@ -51,6 +51,7 @@ struct VirtualMemory {
         current++;
         return current-1;
     }
+
     void change(size_t pos, Value new_value) {
         if (new_value.type == POINTER) {
             gc.mark(new_value.getPtr());
@@ -58,6 +59,7 @@ struct VirtualMemory {
         memory[pos] = new_value;
         memory[pos].box_location = pos;
     }
+
     void dump(size_t pos) {
         if (flags::collect) {
             if (gc.in_use(pos)) return;
@@ -71,6 +73,7 @@ struct VirtualMemory {
             fn_memory.erase(pos);
         memory.erase(pos);
     }
+    
     Value get(size_t pos) {
         auto it = memory.find(pos);
         if (flags::warnings) {

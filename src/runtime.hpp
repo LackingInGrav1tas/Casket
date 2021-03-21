@@ -384,7 +384,9 @@ do { \
             if (top.home_location != -1) {
                 f.vm.scopes.back()["this"] = top.home_location;
             }
-            stack.push(f.vm.run());
+            Value return_value = f.vm.run();
+            return_value.box_location = -1;
+            stack.push(return_value);
             for (int i = 0; i < scopes.size(); i++) scopes[i] = f.vm.scopes[i];
 
         } else if (OP == OP_PRINT_POP) {
