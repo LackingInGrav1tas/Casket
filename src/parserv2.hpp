@@ -387,6 +387,27 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                 opcode[size-1] = jumpOpcode(OP_JUMP_FALSE, opcode.size() - size);
             }
         } else if (check.value == "while") {
+            PUSH(OP_BEGIN_SCOPE);
+            NEXT();
+            if (current.type != Type::e_lbracket) error("parsing error: expected '('  token: " + current.toStr());
+            
+            int at_condition_size = opcode.size();
+
+            expression(2);
+
+            Token end_br = gen.next_token();
+            if (end_br.type != Type::e_rbracket) error("parsing error: expected ')'  token: " + end_br.toStr());
+
+            int size = opcode.size(); // points to below jump
+            PUSH(OP_ERROR);
+            
+            declaration();
+
+            opcode.push_back(jumpOpcode(OP_JUMP, at_condition_size-opcode.size()-1));
+            
+            opcode[size] = jumpOpcode(OP_JUMP_FALSE, opcode.size()-size-1);
+
+            PUSH(OP_END_SCOPE);
 
         } else if (check.value == "class") {
             NEXT();
@@ -440,7 +461,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                     break;
                 }
             }
-            if (gen.finished()) error("parsing error: unclosed bracket");
+            // if (gen.finished()) error("parsing error: unclosed bracket");
             opcode.push_back(newOpcode(OP_END_SCOPE));
         } else if (check.value == "label") {
             NEXT();
