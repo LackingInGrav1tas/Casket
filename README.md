@@ -41,13 +41,18 @@ Used with ```+```, ```-```, ```*```, ```/``` when the instance is on the left-ha
 
 ### Literals ###
 intiger: ```1```, ```2```, ```3```, etc.
+
 float: ```1.0```, ```1.1```, etc.
+
 str: ```"..."```
+
 boolean: ```true```, ```false```
 
 ### Complex ###
 list: ```[...]```
+
 function: ```fn(...) {...}```
+
 instance: ```inst ClassName(...)```
 
 ## Example Code ##
