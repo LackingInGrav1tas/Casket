@@ -57,6 +57,9 @@ enum Opcode {
 
     OP_INDEX=35,
     OP_CREATE_LIST=36,
+
+    OP_INCREMENT=37,
+    OP_DECREMENT=38,
 };
 
 struct OpcodeObject {

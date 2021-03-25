@@ -37,6 +37,9 @@ Used with ```<expr>[...]```
 ```operator_add(rhs)```, ```operator_subtract(rhs)```, ```operator_multiply(rhs)```, ```operator_divide(rhs)```:
 Used with ```+```, ```-```, ```*```, ```/``` when the instance is on the left-hand side.
 
+```increment()```, ```decrement()```:
+Used with ```++``` and ```--``` respectively.
+
 ## Data Types ##
 
 ### Literals ###

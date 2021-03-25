@@ -225,13 +225,23 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             } else {
                 switch (current.type) {
                     case Type::e_add: {
-                        expression(getPrecedence(Type::e_add));
-                        PUSH(OP_ADD);
+                        if (gen.peek_next_token().value != "+") {
+                            expression(getPrecedence(Type::e_add));
+                            PUSH(OP_ADD);
+                        } else {
+                            gen.next_token();
+                            PUSH(OP_INCREMENT);
+                        }
                         break;
                     }
                     case Type::e_sub: {
-                        expression(getPrecedence(Type::e_sub));
-                        PUSH(OP_SUBTRACT);
+                        if (gen.peek_next_token().value != "-") {
+                            expression(getPrecedence(Type::e_sub));
+                            PUSH(OP_SUBTRACT);
+                        } else {
+                            gen.next_token();
+                            PUSH(OP_DECREMENT);
+                        }
                         break;
                     }
                     case Type::e_mul: {

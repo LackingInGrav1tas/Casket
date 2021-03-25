@@ -540,8 +540,118 @@ do { \
             }
             std::reverse(list.begin(), list.end());
             stack.push(listValue(list));
-        }
 
+        } else if (OP == OP_INCREMENT) {
+            TOP();
+            switch (top.type) {
+                case INTIGER: {
+                    if (top.box_location != -1) {
+                        heap.change(
+                            top.box_location,
+                            intValue(
+                                heap.get(
+                                    top.box_location
+                                ).getInt()+1
+                            )
+                        );
+                        stack.push(heap.get(top.box_location));
+                    } else {
+                        stack.push(intValue(top.getInt() + 1));
+                    }
+                    break;
+                }
+                case FLOAT: {
+                    if (top.box_location != -1) {
+                        heap.change(
+                            top.box_location,
+                            floatValue(
+                                heap.get(
+                                    top.box_location
+                                ).getFloat()+1
+                            )
+                        );
+                        stack.push(heap.get(top.box_location));
+                    } else {
+                        stack.push(floatValue(top.getFloat() + 1));
+                    }
+                    break;
+                }
+                case INSTANCE: {
+                    auto it = top.members.find("increment");
+                    if (it != top.members.end()) {
+                        if (heap.get(it->second).type == FUNCTION) {
+                            auto fn = heap.fn_get(heap.get(it->second).getFun());
+                            if (fn.args.size() == 0) {
+                                Scope layer;
+                                layer["this"] = top.box_location;
+                                fn.vm.scopes.push_back(layer);
+                                fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                                stack.push(fn.vm.run());
+                                break;
+                            }
+                        }
+                    }
+                }
+                default: {
+                    error("run-time error: wrong type for increment: " + top.toString());
+                }
+            }
+        } else if (OP == OP_DECREMENT) {
+            TOP();
+            switch (top.type) {
+                case INTIGER: {
+                    if (top.box_location != -1) {
+                        heap.change(
+                            top.box_location,
+                            intValue(
+                                heap.get(
+                                    top.box_location
+                                ).getInt()-1
+                            )
+                        );
+                        stack.push(heap.get(top.box_location));
+                    } else {
+                        stack.push(intValue(top.getInt() - 1));
+                    }
+                    break;
+                }
+                case FLOAT: {
+                    if (top.box_location != -1) {
+                        heap.change(
+                            top.box_location,
+                            floatValue(
+                                heap.get(
+                                    top.box_location
+                                ).getFloat()-1
+                            )
+                        );
+                        stack.push(heap.get(top.box_location));
+                    } else {
+                        stack.push(floatValue(top.getFloat() - 1));
+                    }
+                    break;
+                }
+                case INSTANCE: {
+                    auto it = top.members.find("decrement");
+                    if (it != top.members.end()) {
+                        if (heap.get(it->second).type == FUNCTION) {
+                            auto fn = heap.fn_get(heap.get(it->second).getFun());
+                            if (fn.args.size() == 0) {
+                                Scope layer;
+                                layer["this"] = top.box_location;
+                                fn.vm.scopes.push_back(layer);
+                                fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                                stack.push(fn.vm.run());
+                                break;
+                            }
+                        }
+                    }
+                }
+                default: {
+                    error("run-time error: wrong type for decrement: " + top.toString());
+                }
+            }
+        }
         /*else if (OP == OP_OK_FN) {
             TOP();
             if (top.type == NIL) {
