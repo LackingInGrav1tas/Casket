@@ -188,7 +188,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             int i = 0;
             while (gen.peek_next_token().type != Type::e_rsqrbracket) {
                 expression(2);
-                std::cout << gen.peek_next_token().value << std::endl;
+                // std::cout << gen.peek_next_token().value << std::endl;
                 if (gen.peek_next_token().value == ",") gen.next_token();
                 i++;
             }

@@ -60,6 +60,8 @@ do { \
         } else { \
             rhs.error("invalid type for operation"); \
         } \
+    } else if (lhs.type == POINTER) { \
+        stack.push(ptrValue(lhs.getPtr() operator rhs.getInt())); \
     } else { \
         lhs.error("invalid type for operation"); \
     } \
@@ -156,32 +158,6 @@ do { \
 
         } else if (OP == OP_ADD) {
             BASIC_OPERATION(+, "operator_add");
-            /*if (stack.top().type == INTIGER || stack.top().type == FLOAT) {
-                BASIC_OPERATION(+);
-            } else if (stack.top().type == INSTANCE) {
-                TOP();
-                auto it = top.members.find("operator_add");
-                if (it != top.members.end()) {
-                    if (heap.get(it->second).type == FUNCTION) {
-                        auto fn = heap.fn_get(heap.get(it->second).getFun());
-                        if (fn.args.size() == 1) {
-                            Scope layer;
-                            layer["this"] = top.box_location;
-                            layer[fn.args[0]] = heap.add(stack.top());
-                            stack.pop();
-                            fn.vm.scopes.push_back(layer);
-                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            stack.push(fn.vm.run());
-                            continue;
-                        }
-                    }
-                }
-            } else if (stack.top().type == STRING) {
-                SIDES();
-                stack.push(strValue(lhs.getStr() + rhs.getStr()));
-            } else {
-                stack.top().error("expected either an instance, string, or number.");
-            }*/
         } else if (OP == OP_SUBTRACT) {
             BASIC_OPERATION(-, "operator_subtract");
             
@@ -313,16 +289,26 @@ do { \
             SIDES();
             switch (lhs.type) {
                 case STRING:
-                    stack.push(boolValue(lhs.getStr() == rhs.getStr()));
+                    if (rhs.type != STRING) stack.push(boolValue(false));
+                    else stack.push(boolValue(lhs.getStr() == rhs.getStr()));
                     break;
                 case INTIGER:
-                    stack.push(boolValue(lhs.getInt() == rhs.getInt()));
+                    if (rhs.type != INTIGER) stack.push(boolValue(false));
+                    else stack.push(boolValue(lhs.getInt() == rhs.getInt()));
                     break;
                 case FLOAT:
-                    stack.push(boolValue(lhs.getFloat() == rhs.getInt()));
+                    if (rhs.type != FLOAT) stack.push(boolValue(false));
+                    else stack.push(boolValue(lhs.getFloat() == rhs.getInt()));
                     break;
                 case BOOLEAN:
-                    stack.push(boolValue(lhs.getBool() == rhs.getBool()));
+                    if (rhs.type != BOOLEAN) stack.push(boolValue(false));
+                    else stack.push(boolValue(lhs.getBool() == rhs.getBool()));
+                    break;
+                case NIL:
+                    stack.push(boolValue( rhs.type == NIL ));
+                    break;
+                case LIST:
+                    stack.push(boolValue(false));
                     break;
                 default:
                     error("run-time error: operator '==' does not support that type.");
@@ -331,19 +317,29 @@ do { \
             SIDES();
             switch (lhs.type) {
                 case STRING:
-                    stack.push(boolValue(lhs.getStr() != rhs.getStr()));
+                    if (rhs.type != STRING) stack.push(boolValue(true));
+                    else stack.push(boolValue(lhs.getStr() != rhs.getStr()));
                     break;
                 case INTIGER:
-                    stack.push(boolValue(lhs.getInt() != rhs.getInt()));
+                    if (rhs.type != INTIGER) stack.push(boolValue(true));
+                    else stack.push(boolValue(lhs.getInt() != rhs.getInt()));
                     break;
                 case FLOAT:
-                    stack.push(boolValue(lhs.getFloat() != rhs.getInt()));
+                    if (rhs.type != FLOAT) stack.push(boolValue(true));
+                    else stack.push(boolValue(lhs.getFloat() != rhs.getInt()));
                     break;
                 case BOOLEAN:
-                    stack.push(boolValue(lhs.getBool() != rhs.getBool()));
+                    if (rhs.type != BOOLEAN) stack.push(boolValue(true));
+                    else stack.push(boolValue(lhs.getBool() != rhs.getBool()));
+                    break;
+                case NIL:
+                    stack.push(boolValue( rhs.type != NIL ));
+                    break;
+                case LIST:
+                    stack.push(boolValue(false));
                     break;
                 default:
-                    error("run-time error: operator '!=' does not support that type.");
+                    error("run-time error: operator '!=' does not support that type: " + lhs.toString());
             }
 
         } else if (OP == OP_NEGATE) {
@@ -534,11 +530,15 @@ do { \
             stack.push(instanceValue(templt));
         } else if (OP == OP_CREATE_LIST) {
             Locations list;
+            std::vector<Value> values;
             for (int i = 0; i < opcode[ip].i; i++) {
                 TOP();
-                list.push_back(heap.add(top));
+                values.push_back(top);
             }
-            std::reverse(list.begin(), list.end());
+            std::reverse(values.begin(), values.end());
+            for (int i = 0; i < values.size(); i++) {
+                list.push_back(heap.add(values[i]));
+            }
             stack.push(listValue(list));
 
         } else if (OP == OP_INCREMENT) {
@@ -573,6 +573,22 @@ do { \
                         stack.push(heap.get(top.box_location));
                     } else {
                         stack.push(floatValue(top.getFloat() + 1));
+                    }
+                    break;
+                }
+                case POINTER: {
+                    if (top.box_location != -1) {
+                        heap.change(
+                            top.box_location,
+                            ptrValue(
+                                heap.get(
+                                    top.box_location
+                                ).getPtr()+1
+                            )
+                        );
+                        stack.push(heap.get(top.box_location));
+                    } else {
+                        stack.push(ptrValue(top.getPtr() + 1));
                     }
                     break;
                 }
@@ -628,6 +644,22 @@ do { \
                         stack.push(heap.get(top.box_location));
                     } else {
                         stack.push(floatValue(top.getFloat() - 1));
+                    }
+                    break;
+                }
+                case POINTER: {
+                    if (top.box_location != -1) {
+                        heap.change(
+                            top.box_location,
+                            ptrValue(
+                                heap.get(
+                                    top.box_location
+                                ).getPtr()-1
+                            )
+                        );
+                        stack.push(heap.get(top.box_location));
+                    } else {
+                        stack.push(ptrValue(top.getPtr() - 1));
                     }
                     break;
                 }

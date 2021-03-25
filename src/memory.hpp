@@ -80,7 +80,7 @@ struct VirtualMemory {
             if (it != memory.end()) {
                 return it->second;
             } else {
-                std::cerr << "warning: found hanging pointer (" << pos << "). make sure that there aren't any pointers to a variable declared in a block that has been moved out of scope." << std::endl;
+                std::cerr << "warning: found hanging pointer ptr(" << pos << ")." << std::endl;
                 return nullValue();
             }
         } else return (it == memory.end() ? nullValue() : it->second);
