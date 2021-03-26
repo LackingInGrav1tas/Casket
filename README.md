@@ -113,3 +113,15 @@ print a;
 ```
 2
 ```
+
+
+### Iterating Lists ###
+```
+set a = [1, 2, 3];
+for (set it = &a[0]; *it != a; it++)
+    print *it, "\n";
+```
+
+This method works because of how lists are stored in memory: ```..., ITEM1, ITEM2, ITEM3, LIST_OBJ, ... ```
+
+By first setting ```it``` to ```&a[0]```, incrementing ```it``` moves it through the list until eventually ```*it == a```, meaning that ```it``` points to ```LIST_OBJ``` and has iterated through the list.
