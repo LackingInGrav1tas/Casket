@@ -79,6 +79,29 @@ print inst Example(msg="Hello") + ", World!";
 Hello, World!
 ```
 
+### Control Flow ###
+```
+if (true) {
+    "some expression";
+    "another one";
+} else "brackets aren't needed for one-line blocks";
+```
+```
+while (true) {
+    "same applies";
+}
+```
+```
+for (set i = 0; i < 5; i++)
+    "loops 5 times";
+```
+```
+goto skipping;
+"gets skipped";
+label skipping;
+```
+
+
 ### Pointers ###
 
 ```
