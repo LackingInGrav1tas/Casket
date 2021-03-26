@@ -418,6 +418,38 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             opcode[size] = jumpOpcode(OP_JUMP_FALSE, opcode.size()-size-1);
 
             PUSH(OP_END_SCOPE);
+        } else if (check.value == "for") {
+            if (gen.next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen[gen.peek_next_token().position-1].toStr());
+            declaration(); // for (; 
+            PUSH(OP_BEGIN_SCOPE);
+
+            int at_condition_size = opcode.size(); // condition
+
+            expression(2);
+
+            SEMICOLON();
+
+            int size = opcode.size(); // points to below jump
+            PUSH(OP_ERROR);
+            
+            int iter_pre_size = opcode.size();
+            expression(1); // iter
+            int iter_post_size = opcode.size();
+
+            if (gen.next_token().type != Type::e_rbracket) error("parsing error: expected a ')'  token: " + gen[gen.peek_next_token().position-1].toStr());
+
+            declaration();
+
+            for (int i = iter_pre_size; i < iter_post_size; i++) {
+                opcode.push_back(opcode[iter_pre_size]);
+                opcode.erase(opcode.begin()+iter_pre_size);
+            }
+
+            opcode.push_back(jumpOpcode(OP_JUMP, at_condition_size-opcode.size()-1));
+            
+            opcode[size] = jumpOpcode(OP_JUMP_FALSE, opcode.size()-size-1);
+
+            PUSH(OP_END_SCOPE);
 
         } else if (check.value == "class") {
             NEXT();
@@ -497,12 +529,19 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             SEMICOLON();
         } else if (check.value == "print") { // until stl
             expression(2);
-            SEMICOLON();
             PUSH(OP_PRINT_POP);
+            while (gen.next_token().value != ";") {
+                expression(2);
+                PUSH(OP_PRINT_POP);
+                if (gen.peek_next_token().value != "," && gen.peek_next_token().value != ";")
+                    error("parsing error: expected either ',' or ';'  : " + gen.peek_next_token().toStr());
+            }
         } else if (check.value == "return") { // until stl
             expression(2);
             SEMICOLON();
             PUSH(OP_RETURN_POP);
+        } else if (check.value == ";") {
+            // nada
         } else {
             exp(1);
             SEMICOLON();

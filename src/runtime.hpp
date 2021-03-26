@@ -306,12 +306,10 @@ do { \
                     break;
                 case NIL:
                     stack.push(boolValue( rhs.type == NIL ));
-                    break;
-                case LIST:
-                    stack.push(boolValue(false));
-                    break;
+                    break;                    
                 default:
-                    error("run-time error: operator '==' does not support that type.");
+                    stack.push(boolValue(lhs.toString() == rhs.toString()));
+                    break;
             }
         } else if (OP == OP_NOT_EQUAL) {
             SIDES();
@@ -334,12 +332,10 @@ do { \
                     break;
                 case NIL:
                     stack.push(boolValue( rhs.type != NIL ));
-                    break;
-                case LIST:
-                    stack.push(boolValue(false));
-                    break;
+                    break;                    
                 default:
-                    error("run-time error: operator '!=' does not support that type: " + lhs.toString());
+                    stack.push(boolValue(lhs.toString() != rhs.toString()));
+                    break;
             }
 
         } else if (OP == OP_NEGATE) {
