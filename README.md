@@ -1,6 +1,6 @@
 # Casket #
 
-Bytecode interpreter written in C++. 
+Bytecode interpreter written in C++. Slow and inefficient, made for fun.
 
 ## EBNF ##
 ```EBNF
