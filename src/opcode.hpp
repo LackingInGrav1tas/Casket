@@ -6,7 +6,7 @@
 #include <string>
 
 enum Opcode {
-    OP_BEGIN_SCOPE=0,
+    OP_BEGIN_SCOPE=100,
     OP_END_SCOPE=1,
     
     OP_CONSTANT=2,
@@ -67,6 +67,10 @@ struct OpcodeObject {
     std::string lexeme;
     int i;
     Value value;
+
+    int size() {
+        return sizeof(Opcode) + sizeof(int);
+    }
 };
 
 OpcodeObject newOpcode(Opcode op) {

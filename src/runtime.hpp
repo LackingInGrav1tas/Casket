@@ -166,7 +166,34 @@ do { \
             
         } else if (OP == OP_MODULO) {
             SIDES();
-            if (lhs.type == STRING) {
+            if (lhs.type == INSTANCE || rhs.type == INSTANCE) {
+                Value top;
+                Value arg;
+                bool left = false;
+                if (lhs.type == INSTANCE) {
+                    top = lhs;
+                    arg = rhs;
+                    left = true;
+                } else {
+                    top = rhs;
+                    arg = lhs;
+                }
+                auto it = top.members.find("operator_modulo");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 1) {
+                            Scope layer;
+                            layer["this"] = top.box_location;
+                            layer["left"] = heap.add(boolValue(left));
+                            layer[fn.args[0]] = heap.add(arg);
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            stack.push(fn.vm.run());
+                        }
+                    }
+                } else lhs.error("invalid type for operation");
+            } else if (lhs.type == STRING) {
                 std::string converted;
                 if (rhs.type == INSTANCE) {
                     auto it = rhs.members.find("to_string");
@@ -266,11 +293,9 @@ do { \
                                 fn.vm.scopes.push_back(layer);
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                                 stack.push(fn.vm.run());
-                                continue;
                             }
                         }
-                    }
-                    lhs.error("expected either an instance or a number.");
+                    } else lhs.error("expected either an instance or a number.");
                 } else {
                     lhs.error("expected either an instance or a number.");
                 }
@@ -287,65 +312,153 @@ do { \
 
         } else if (OP == OP_EQUALITY) {
             SIDES();
-            switch (lhs.type) {
-                case STRING:
-                    if (rhs.type != STRING) stack.push(boolValue(false));
-                    else stack.push(boolValue(lhs.getStr() == rhs.getStr()));
-                    break;
-                case INTIGER:
-                    if (rhs.type != INTIGER) stack.push(boolValue(false));
-                    else stack.push(boolValue(lhs.getInt() == rhs.getInt()));
-                    break;
-                case FLOAT:
-                    if (rhs.type != FLOAT) stack.push(boolValue(false));
-                    else stack.push(boolValue(lhs.getFloat() == rhs.getInt()));
-                    break;
-                case BOOLEAN:
-                    if (rhs.type != BOOLEAN) stack.push(boolValue(false));
-                    else stack.push(boolValue(lhs.getBool() == rhs.getBool()));
-                    break;
-                case NIL:
-                    stack.push(boolValue( rhs.type == NIL ));
-                    break;                    
-                default:
-                    stack.push(boolValue(lhs.toString() == rhs.toString()));
-                    break;
+            if (lhs.type == INSTANCE || rhs.type == INSTANCE) {
+                Value top;
+                Value arg;
+                bool left = false;
+                if (lhs.type == INSTANCE) {
+                    top = lhs;
+                    arg = rhs;
+                    left = true;
+                } else {
+                    top = rhs;
+                    arg = lhs;
+                }
+                auto it = top.members.find("operator_equality");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 1) {
+                            Scope layer;
+                            layer["this"] = top.box_location;
+                            layer["left"] = heap.add(boolValue(left));
+                            layer[fn.args[0]] = heap.add(arg);
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            stack.push(fn.vm.run());
+                        }
+                    }
+                } else lhs.error("invalid type for operation");
+            } else {
+                switch (lhs.type) {
+                    case STRING:
+                        if (rhs.type != STRING) stack.push(boolValue(false));
+                        else stack.push(boolValue(lhs.getStr() == rhs.getStr()));
+                        break;
+                    case INTIGER:
+                        if (rhs.type != INTIGER) stack.push(boolValue(false));
+                        else stack.push(boolValue(lhs.getInt() == rhs.getInt()));
+                        break;
+                    case FLOAT:
+                        if (rhs.type != FLOAT) stack.push(boolValue(false));
+                        else stack.push(boolValue(lhs.getFloat() == rhs.getInt()));
+                        break;
+                    case BOOLEAN:
+                        if (rhs.type != BOOLEAN) stack.push(boolValue(false));
+                        else stack.push(boolValue(lhs.getBool() == rhs.getBool()));
+                        break;
+                    case NIL:
+                        stack.push(boolValue( rhs.type == NIL ));
+                        break;                    
+                    default:
+                        stack.push(boolValue(lhs.toString() == rhs.toString()));
+                        break;
+                }
             }
         } else if (OP == OP_NOT_EQUAL) {
             SIDES();
-            switch (lhs.type) {
-                case STRING:
-                    if (rhs.type != STRING) stack.push(boolValue(true));
-                    else stack.push(boolValue(lhs.getStr() != rhs.getStr()));
-                    break;
-                case INTIGER:
-                    if (rhs.type != INTIGER) stack.push(boolValue(true));
-                    else stack.push(boolValue(lhs.getInt() != rhs.getInt()));
-                    break;
-                case FLOAT:
-                    if (rhs.type != FLOAT) stack.push(boolValue(true));
-                    else stack.push(boolValue(lhs.getFloat() != rhs.getInt()));
-                    break;
-                case BOOLEAN:
-                    if (rhs.type != BOOLEAN) stack.push(boolValue(true));
-                    else stack.push(boolValue(lhs.getBool() != rhs.getBool()));
-                    break;
-                case NIL:
-                    stack.push(boolValue( rhs.type != NIL ));
-                    break;                    
-                default:
-                    stack.push(boolValue(lhs.toString() != rhs.toString()));
-                    break;
+            if (lhs.type == INSTANCE || rhs.type == INSTANCE) {
+                Value top;
+                Value arg;
+                bool left = false;
+                if (lhs.type == INSTANCE) {
+                    top = lhs;
+                    arg = rhs;
+                    left = true;
+                } else {
+                    top = rhs;
+                    arg = lhs;
+                }
+                auto it = top.members.find("operator_modulo");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 1) {
+                            Scope layer;
+                            layer["this"] = top.box_location;
+                            layer["left"] = heap.add(boolValue(left));
+                            layer[fn.args[0]] = heap.add(arg);
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            stack.push(fn.vm.run());
+                        }
+                    }
+                } else lhs.error("invalid type for operation");
+            } else {
+                switch (lhs.type) {
+                    case STRING:
+                        if (rhs.type != STRING) stack.push(boolValue(true));
+                        else stack.push(boolValue(lhs.getStr() != rhs.getStr()));
+                        break;
+                    case INTIGER:
+                        if (rhs.type != INTIGER) stack.push(boolValue(true));
+                        else stack.push(boolValue(lhs.getInt() != rhs.getInt()));
+                        break;
+                    case FLOAT:
+                        if (rhs.type != FLOAT) stack.push(boolValue(true));
+                        else stack.push(boolValue(lhs.getFloat() != rhs.getInt()));
+                        break;
+                    case BOOLEAN:
+                        if (rhs.type != BOOLEAN) stack.push(boolValue(true));
+                        else stack.push(boolValue(lhs.getBool() != rhs.getBool()));
+                        break;
+                    case NIL:
+                        stack.push(boolValue( rhs.type != NIL ));
+                        break;                    
+                    default:
+                        stack.push(boolValue(lhs.toString() != rhs.toString()));
+                        break;
+                }
             }
 
         } else if (OP == OP_NEGATE) {
             TOP();
-            if (top.type == INTIGER) stack.push(intValue(-top.getInt()));
+            if (top.type == INSTANCE) {
+                auto it = top.members.find("operator_negate");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 0) {
+                            Scope layer;
+                            layer["this"] = top.box_location;
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            stack.push(fn.vm.run());
+                        }
+                    }
+                } else top.error("invalid type for operation");
+            }
+            else if (top.type == INTIGER) stack.push(intValue(-top.getInt()));
             else if (top.type == FLOAT) stack.push(floatValue(-top.getFloat()));
             else top.error("invalid type for operation");
         } else if (OP == OP_NOT) {
             TOP();
-            stack.push(boolValue(!top.getBool()));
+            if (top.type == INSTANCE) {
+                auto it = top.members.find("operator_not");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 0) {
+                            Scope layer;
+                            layer["this"] = top.box_location;
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            stack.push(fn.vm.run());
+                        }
+                    }
+                } else top.error("invalid type for operation!");
+            } else
+                stack.push(boolValue(!top.getBool()));
         } else if (OP == OP_AND) {
             SIDES();
             stack.push(boolValue( lhs.getBool() && rhs.getBool() ));

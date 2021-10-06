@@ -9,6 +9,7 @@
 #include <stack>
 #include <iostream>
 #include <functional>
+#include <fstream>
 
 typedef std::map<std::string, size_t> Scope;
 
@@ -25,6 +26,10 @@ struct Machine {
     }
     
     void init(lexertk::generator &gen, bool fn_parsing = false);
+
+    void serialize(std::ifstream file) {
+        
+    }
 
     void disassemble() {
         #define OP opcode[i]

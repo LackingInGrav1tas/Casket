@@ -28,17 +28,27 @@ Bytecode interpreter written in C++. Slow and inefficient, made for fun.
 ```
 
 ## Class Built-in Functions ##
-```to_string()```:
-Returns a string version, used in ```print```.
 
-```index(i)```:
-Used with ```<expr>[...]```
+| function name     | operator | arguements |
+|-------------------|----------|------------|
+| increment         | ++       | 0          |
+| decrement         | --       | 0          |
+| to_string         | print    | 0          |
+| index             | [...]    | 1          |
+| operator_add      | +        | 1          |
+| operator_subtract | -        | 1          |
+| operator_multiply | *        | 1          |
+| operator_divide   | /        | 1          |
+| operator_modulo   | %        | 1          |
+| operator_equality   | ==        | 1          |
+| operator_inequality   | !=        | 1          |
+| operator_greater   | >        | 1          |
+| operator_less   | <        | 1          |
+| operator_greatereq   | >=        | 1          |
+| operator_lesseq   | <=        | 1          |
+| operator_not      | !        | 1          |
+| operator_negate   | prefix - | 1          |
 
-```operator_add(rhs)```, ```operator_subtract(rhs)```, ```operator_multiply(rhs)```, ```operator_divide(rhs)```:
-Used with ```+```, ```-```, ```*```, ```/``` when the instance is on the left-hand side.
-
-```increment()```, ```decrement()```:
-Used with ```++``` and ```--``` respectively.
 
 ## Data Types ##
 
