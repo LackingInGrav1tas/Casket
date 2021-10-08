@@ -43,7 +43,8 @@ static int getPrecedence(Type t, std::string s = "") {
 static bool invalidIdentifier(std::string id) {
     return id == "set" || id == "fn" || id == "if" || id == "for" || id == "while" ||
     id == "true" || id == "false" || id == "print" || id == "return" || id == "null" || 
-    id == "label" || id == "else" || id == "class" || id == "inst" || id == "this";
+    id == "label" || id == "else" || id == "class" || id == "inst" || id == "this" || 
+    id == "operator";
 }
 
 void Machine::init(Generator &gen, bool fn_parsing) {
@@ -468,10 +469,52 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                 } else {
                     i++;
                     Token tname = gen.next_token();
-                    if (tname.type != Type::e_symbol || invalidIdentifier(tname.value)) {
+                    if (tname.value == "operator") {
+                        Token ntk = gen.next_token();
+                        #define EQUALS(op) op == ntk.value
+                        if (EQUALS("+")) {
+                            if (gen.peek_next_token().value == "+") {
+                                PUSHC(idenValue("++"));
+                                gen.next_token();
+                            } else {
+                                PUSHC(idenValue("+"));
+                            }
+                        } else if (EQUALS("-")) {
+                            if (gen.peek_next_token().value == "-") {
+                                PUSHC(idenValue("--"));
+                                gen.next_token();
+                            } else {
+                                PUSHC(idenValue("-"));
+                            }
+                        } else if (EQUALS("=")) {
+                            if (gen.peek_next_token().value == "=") {
+                                PUSHC(idenValue("=="));
+                                gen.next_token();
+                            } else {
+                                error("parsing error: '=' is not bindable  token: " + ntk.toStr());
+                            }
+                        } else if (EQUALS("!")) {
+                            if (gen.peek_next_token().value == "=") {
+                                PUSHC(idenValue("!="));
+                                gen.next_token();
+                            } else {
+                                PUSHC(idenValue("!"));
+                            }
+                        } else if (EQUALS("*") || EQUALS("/") || EQUALS("%") || EQUALS("[") || EQUALS(">")
+                                || EQUALS("<") || EQUALS(">=") || EQUALS("<=")) {
+                            PUSHC(idenValue(ntk.value));
+                        } else if (EQUALS("prefix_negate")) {
+                            PUSHC(idenValue("prefix-"));
+                        } else {
+                            error("parsing error: expected an operator to bind to,  token: " + ntk.toStr());
+                        }
+                        #undef EQUALS
+                        // gen.next_token();
+                    } else if (tname.type != Type::e_symbol || invalidIdentifier(tname.value)) {
                         error("parsing error: expected an identifier  !!  token: " + tname.toStr());
+                    } else {
+                        PUSHC(idenValue(tname.value));
                     }
-                    PUSHC(idenValue(tname.value));
                     NEXT();
                     if CASE(Type::e_colon) {
                         expression(1);

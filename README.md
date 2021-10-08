@@ -27,28 +27,6 @@ Bytecode interpreter written in C++. Slow and inefficient, made for fun.
 
 ```
 
-## Class Built-in Functions ##
-
-| function name     | operator | arguements |
-|-------------------|----------|------------|
-| increment         | ++       | 0          |
-| decrement         | --       | 0          |
-| to_string         | print    | 0          |
-| index             | [...]    | 1          |
-| operator_add      | +        | 1          |
-| operator_subtract | -        | 1          |
-| operator_multiply | *        | 1          |
-| operator_divide   | /        | 1          |
-| operator_modulo   | %        | 1          |
-| operator_equality   | ==        | 1          |
-| operator_inequality   | !=        | 1          |
-| operator_greater   | >        | 1          |
-| operator_less   | <        | 1          |
-| operator_greatereq   | >=        | 1          |
-| operator_lesseq   | <=        | 1          |
-| operator_not      | !        | 1          |
-| operator_negate   | prefix - | 1          |
-
 
 ## Data Types ##
 
@@ -78,16 +56,19 @@ class Example {
     to_string: fn() {
         return this.msg;
     };
-    operator_add: fn(a) {
+    operator +: fn(a) {
         return this.msg % a;
     };
 }
 
 print inst Example(msg="Hello") + ", World!";
 ```
-```
-Hello, World!
-```
+
+Class functions are fed one (or two) variables automatically:
+```this```: pointer to object
+```left```: only for operator overloads, true if the class is one the left of the operation
+
+Pretty much every operator can be overloaded by a class, using the syntax ```operator <op>: fn...```. ```op``` is just the operator, with the exception of prefix - being ```prefix_negate```. 
 
 ### Control Flow ###
 ```

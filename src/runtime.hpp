@@ -40,6 +40,8 @@ do { \
                     fn.vm.templates.push_back(std::map<std::string, ClassTemplate>()); \
                     stack.push(fn.vm.run()); \
                     continue; \
+                } else { \
+                    error("run-time error: expected 1 arguement for " + top.toString() + "'s " + trait + " implementation"); \
                 } \
             } \
         } \
@@ -66,10 +68,41 @@ do { \
         lhs.error("invalid type for operation"); \
     } \
 } while (0)
-#define bBASIC_OPERATION(operator) \
+#define bBASIC_OPERATION(operator, trait) \
 do { \
     SIDES(); \
-    if (lhs.type == FLOAT) { \
+    if (lhs.type == INSTANCE || rhs.type == INSTANCE) { \
+        Value top; \
+        Value arg; \
+        bool left = false; \
+        if (lhs.type == INSTANCE) { \
+            top = lhs; \
+            arg = rhs; \
+            left = true; \
+        } else { \
+            top = rhs; \
+            arg = lhs; \
+        } \
+        auto it = top.members.find(trait); \
+        if (it != top.members.end()) { \
+            if (heap.get(it->second).type == FUNCTION) { \
+                auto fn = heap.fn_get(heap.get(it->second).getFun()); \
+                if (fn.args.size() == 1) { \
+                    Scope layer; \
+                    layer["this"] = top.box_location; \
+                    layer["left"] = heap.add(boolValue(left)); \
+                    layer[fn.args[0]] = heap.add(arg); \
+                    fn.vm.scopes.push_back(layer); \
+                    fn.vm.templates.push_back(std::map<std::string, ClassTemplate>()); \
+                    stack.push(fn.vm.run()); \
+                    continue; \
+                } else { \
+                    error("run-time error: expected 1 arguement for " + top.toString() + "'s " + trait + " implementation"); \
+                } \
+            } \
+        } \
+        lhs.error("invalid type for operation"); \
+    } else if (lhs.type == FLOAT) { \
         if (rhs.type == FLOAT) { \
             stack.push(boolValue( lhs.getFloat() operator rhs.getFloat() )); \
         } else if (rhs.type == INTIGER) { \
@@ -157,12 +190,12 @@ do { \
 
 
         } else if (OP == OP_ADD) {
-            BASIC_OPERATION(+, "operator_add");
+            BASIC_OPERATION(+, "+");
         } else if (OP == OP_SUBTRACT) {
-            BASIC_OPERATION(-, "operator_subtract");
+            BASIC_OPERATION(-, "-");
             
         } else if (OP == OP_MULTIPLY) {
-            BASIC_OPERATION(*, "operator_multiply");
+            BASIC_OPERATION(*, "*");
             
         } else if (OP == OP_MODULO) {
             SIDES();
@@ -178,7 +211,7 @@ do { \
                     top = rhs;
                     arg = lhs;
                 }
-                auto it = top.members.find("operator_modulo");
+                auto it = top.members.find("%");
                 if (it != top.members.end()) {
                     if (heap.get(it->second).type == FUNCTION) {
                         auto fn = heap.fn_get(heap.get(it->second).getFun());
@@ -190,6 +223,8 @@ do { \
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run());
+                        } else {
+                            error("run-time error: expected 1 arguement for " + top.toString() + "'s % implementation");
                         }
                     }
                 } else lhs.error("invalid type for operation");
@@ -207,7 +242,7 @@ do { \
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                                 converted = fn.vm.run().getStr();
                             } else {
-                                error("run-time error: invalid type for operation  object: " + rhs.toString());
+                                error("run-time error: expected 0 arguements for " + rhs.toString() + "'s to_string implementation");
                             }
                         } else {
                             error("run-time error: invalid type for operation  object: " + rhs.toString());
@@ -236,7 +271,7 @@ do { \
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                                 converted = fn.vm.run().getStr();
                             } else {
-                                error("run-time error: invalid type for operation  object: " + lhs.toString());
+                                error("run-time error: expected 0 arguements for " + rhs.toString() + "'s to_string implementation");
                             }
                         } else {
                             error("run-time error: invalid type for operation  object: " + lhs.toString());
@@ -282,7 +317,7 @@ do { \
                         top = rhs;
                         arg = lhs;
                     }
-                    auto it = top.members.find("operator_divide");
+                    auto it = top.members.find("/");
                     if (it != top.members.end()) {
                         if (heap.get(it->second).type == FUNCTION) {
                             auto fn = heap.fn_get(heap.get(it->second).getFun());
@@ -293,6 +328,8 @@ do { \
                                 fn.vm.scopes.push_back(layer);
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                                 stack.push(fn.vm.run());
+                            } else {
+                                error("run-time error: expected 1 arguement for " + top.toString() + "'s / implementation");
                             }
                         }
                     } else lhs.error("expected either an instance or a number.");
@@ -302,13 +339,13 @@ do { \
             }
 
         } else if (OP == OP_MORE) {
-            bBASIC_OPERATION(>);
+            bBASIC_OPERATION(>, ">");
         } else if (OP == OP_MORE_EQ) {
-            bBASIC_OPERATION(>=);
+            bBASIC_OPERATION(>=, ">=");
         } else if (OP == OP_LESS) {
-            bBASIC_OPERATION(<);
+            bBASIC_OPERATION(<, "<");
         } else if (OP == OP_LESS_EQ) {
-            bBASIC_OPERATION(<=);
+            bBASIC_OPERATION(<=, "<=");
 
         } else if (OP == OP_EQUALITY) {
             SIDES();
@@ -324,7 +361,7 @@ do { \
                     top = rhs;
                     arg = lhs;
                 }
-                auto it = top.members.find("operator_equality");
+                auto it = top.members.find("==");
                 if (it != top.members.end()) {
                     if (heap.get(it->second).type == FUNCTION) {
                         auto fn = heap.fn_get(heap.get(it->second).getFun());
@@ -336,6 +373,8 @@ do { \
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run());
+                        } else {
+                            error("run-time error: expected 1 arguement for " + top.toString() + "'s == implementation");
                         }
                     }
                 } else lhs.error("invalid type for operation");
@@ -379,7 +418,7 @@ do { \
                     top = rhs;
                     arg = lhs;
                 }
-                auto it = top.members.find("operator_modulo");
+                auto it = top.members.find("%");
                 if (it != top.members.end()) {
                     if (heap.get(it->second).type == FUNCTION) {
                         auto fn = heap.fn_get(heap.get(it->second).getFun());
@@ -391,6 +430,8 @@ do { \
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run());
+                        } else {
+                            error("run-time error: expected 1 arguement for " + top.toString() + "'s % implementation");
                         }
                     }
                 } else lhs.error("invalid type for operation");
@@ -424,7 +465,7 @@ do { \
         } else if (OP == OP_NEGATE) {
             TOP();
             if (top.type == INSTANCE) {
-                auto it = top.members.find("operator_negate");
+                auto it = top.members.find("prefix-");
                 if (it != top.members.end()) {
                     if (heap.get(it->second).type == FUNCTION) {
                         auto fn = heap.fn_get(heap.get(it->second).getFun());
@@ -434,6 +475,8 @@ do { \
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run());
+                        } else {
+                            error("run-time error: expected 0 arguements for " + top.toString() + "'s prefix- implementation");
                         }
                     }
                 } else top.error("invalid type for operation");
@@ -444,7 +487,7 @@ do { \
         } else if (OP == OP_NOT) {
             TOP();
             if (top.type == INSTANCE) {
-                auto it = top.members.find("operator_not");
+                auto it = top.members.find("!");
                 if (it != top.members.end()) {
                     if (heap.get(it->second).type == FUNCTION) {
                         auto fn = heap.fn_get(heap.get(it->second).getFun());
@@ -454,6 +497,8 @@ do { \
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run());
+                        } else {
+                            error("run-time error: expected 0 arguements for " + top.toString() + "'s ! implementation");
                         }
                     }
                 } else top.error("invalid type for operation!");
@@ -508,6 +553,8 @@ do { \
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             std::cout << fn.vm.run().getStr();
                             continue;
+                        } else {
+                            error("run-time error: expected 0 arguements for " + top.toString() + "'s to_string implementation");
                         }
                     }
                 }
@@ -574,7 +621,7 @@ do { \
             } else if (lhs.type == LIST) {
                 stack.push(heap.get(lhs.list_locations[rhs.getInt()]));
             } else if (lhs.type == INSTANCE) {
-                auto it = lhs.members.find("index");
+                auto it = lhs.members.find("[");
                 if (it != lhs.members.end()) {
                     if (heap.get(it->second).type == FUNCTION) {
                         auto fn = heap.fn_get(heap.get(it->second).getFun());
@@ -586,7 +633,7 @@ do { \
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run());
                         } else {
-                            error("run-time error: cannot index a non-string, non-list object : " + lhs.toString());
+                            error("run-time error: expected 1 arguement for " + lhs.toString() + "'s [ implementation");
                         }
                     }
                 } else {
@@ -702,7 +749,7 @@ do { \
                     break;
                 }
                 case INSTANCE: {
-                    auto it = top.members.find("increment");
+                    auto it = top.members.find("++");
                     if (it != top.members.end()) {
                         if (heap.get(it->second).type == FUNCTION) {
                             auto fn = heap.fn_get(heap.get(it->second).getFun());
@@ -713,6 +760,8 @@ do { \
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                                 stack.push(fn.vm.run());
                                 break;
+                            } else {
+                                error("run-time error: expected 0 arguements for " + top.toString() + "'s ++ implementation");
                             }
                         }
                     }
@@ -773,7 +822,7 @@ do { \
                     break;
                 }
                 case INSTANCE: {
-                    auto it = top.members.find("decrement");
+                    auto it = top.members.find("--");
                     if (it != top.members.end()) {
                         if (heap.get(it->second).type == FUNCTION) {
                             auto fn = heap.fn_get(heap.get(it->second).getFun());
@@ -784,6 +833,8 @@ do { \
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                                 stack.push(fn.vm.run());
                                 break;
+                            } else {
+                                error("run-time error: expected 0 arguements for " + top.toString() + "'s -- implementation");
                             }
                         }
                     }
@@ -793,18 +844,9 @@ do { \
                 }
             }
         }
-        /*else if (OP == OP_OK_FN) {
-            TOP();
-            if (top.type == NIL) {
-                error("run-time error: found ")
-            } else {
-                stack.push(top);
-            }
-        }*/
     }
     #undef OP
     #undef INSTUCTION
-    //std::cout << "\nsucess" << std::endl;
     return intValue(0);
 }
 
