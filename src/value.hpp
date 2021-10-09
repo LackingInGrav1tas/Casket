@@ -14,19 +14,29 @@ enum PrimType {
     STRING,
     BOOLEAN,
     NIL,
+    BYTE,
     POINTER,
     LIST,
     FUNCTION,
     IDENTIFIER,
-    INSTANCE
+    INSTANCE,
+
+    STL_CALL,
+};
+
+enum LibraryCall {
+    LIST_TO_STRING,
+    LIST_JOIN,
 };
 
 struct Value {
+    LibraryCall stl_call;
     int intiger;
     float floating;
     bool boolean;
     std::string str;
     size_t pointer;
+    unsigned char byte;
     int box_location;
     int home_location;
     size_t fn;
@@ -57,6 +67,10 @@ struct Value {
         if (type == BOOLEAN) return boolean;
         else error("expected a bool");
     }
+    inline unsigned char &getByte() {
+        if (type == BYTE) return byte;
+        else error("expected a byte");
+    }
     inline std::string &getIden() {
         if (type == IDENTIFIER) return str;
         else error("expected an identifier");
@@ -77,6 +91,11 @@ struct Value {
     inline size_t &getFun() {
         if (type == FUNCTION) return fn;
         else error("expected a function");
+    }
+
+    inline LibraryCall &getSTL() {
+        if (type == STL_CALL) return stl_call;
+        else error("expected a library object");
     }
 
     inline int getBoxLoc() {
@@ -128,6 +147,24 @@ Value boolValue(bool b) {
     v.type = BOOLEAN;
     v.home_location = -1;
     v.getBool() = b;
+    v.box_location = -1;
+    return v;
+}
+
+Value stlValue(LibraryCall lc) {
+    Value v;
+    v.type = STL_CALL;
+    v.home_location = -1;
+    v.getSTL() = lc;
+    v.box_location = -1;
+    return v;
+}
+
+Value byteValue(unsigned char b) {
+    Value v;
+    v.type = BYTE;
+    v.home_location = -1;
+    v.getByte() = b;
     v.box_location = -1;
     return v;
 }

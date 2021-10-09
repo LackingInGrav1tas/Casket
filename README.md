@@ -44,7 +44,7 @@ list: ```[...]```
 
 function: ```fn(...) {...}```
 
-instance: ```inst ClassName(...)```
+instance: ```inst ClassName(field=..., ...)```
 
 ## Example Code ##
 

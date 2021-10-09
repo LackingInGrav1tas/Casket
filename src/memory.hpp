@@ -154,6 +154,9 @@ std::string Value::toString() {
         case POINTER: {
             return "ptr(" + std::to_string(getPtr()) + ")";
         }
+        case BYTE: {
+            return std::string(1, byte);
+        }
     }
     return "";
 }

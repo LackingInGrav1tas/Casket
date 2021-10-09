@@ -522,22 +522,60 @@ do { \
                 args.insert(args.begin(), top);
             }
             TOP();
-            int fn_loc = top.getFun();
-            Function f = heap.fn_get(fn_loc);
-            if (f.args.size() != args.size()) error("run-time error: expected " + std::to_string(f.args.size()) + " arguments, found " + std::to_string(args.size()));
-            f.vm.scopes = scopes;
-            f.vm.scopes.push_back(Scope());
-            f.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-            for (int i = 0; i < f.args.size(); i++) {
-                f.vm.scopes.back()[f.args[i]] = heap.add(args[i]);
+            if (top.type == STL_CALL) {
+                switch (top.getSTL()) { // prim stlcall [args] OP_CALL
+                    case LIST_TO_STRING: {
+                        if (INSTRUCTION.i != 0) {
+                            error("run-time error: list.to_string expects 0 arguements");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        stack.push( strValue( prim.toString() ) );
+                        break;
+                    }
+                    case LIST_JOIN: {
+                        if (INSTRUCTION.i != 1) {
+                            error("run-time error: list.join expects 1 arguement");
+                        }
+                        std::string connector = args[0].toString();
+                        if (args[0].type == STRING) {
+                            connector = connector.substr(1, connector.length()-2);
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        std::string s = "";
+                        for (int i = 0; i < prim.getList().size() - 1; i++) {
+                            s += heap.get(prim.getList()[i]).toString() + connector;
+                        }
+                        stack.push(
+                            strValue(
+                                s + heap.get(prim.getList()[prim.getList().size() - 1]).toString()
+                            )
+                        );
+                        break;
+                    }
+                    default: {
+                        error("run-time error: stl call does not exist.");
+                    }
+                }
+            } else {
+                int fn_loc = top.getFun();
+                Function f = heap.fn_get(fn_loc);
+                if (f.args.size() != args.size()) error("run-time error: expected " + std::to_string(f.args.size()) + " arguments, found " + std::to_string(args.size()));
+                f.vm.scopes = scopes;
+                f.vm.scopes.push_back(Scope());
+                f.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                for (int i = 0; i < f.args.size(); i++) {
+                    f.vm.scopes.back()[f.args[i]] = heap.add(args[i]);
+                }
+                if (top.home_location != -1) {
+                    f.vm.scopes.back()["this"] = top.home_location;
+                }
+                Value return_value = f.vm.run();
+                return_value.box_location = -1;
+                stack.push(return_value);
+                for (int i = 0; i < scopes.size(); i++) scopes[i] = f.vm.scopes[i];
             }
-            if (top.home_location != -1) {
-                f.vm.scopes.back()["this"] = top.home_location;
-            }
-            Value return_value = f.vm.run();
-            return_value.box_location = -1;
-            stack.push(return_value);
-            for (int i = 0; i < scopes.size(); i++) scopes[i] = f.vm.scopes[i];
 
         } else if (OP == OP_PRINT_POP) {
             TOP();
@@ -600,7 +638,34 @@ do { \
             SIDES();
             if (lhs.members.find(rhs.getIden()) != lhs.members.end())
                 stack.push(heap.get(lhs.members[rhs.getIden()]));
-            else {
+            else do {
+                stack.push(lhs);
+                switch (lhs.type) { // STL stuff
+                    case INTIGER: {
+
+                    }
+                    case FLOAT: {
+
+                    }
+                    case STRING: {
+
+                    }
+                    case BOOLEAN: {
+
+                    }
+                    case BYTE: {
+
+                    }
+                    case LIST: {
+                        if (rhs.getIden() == "to_string") {
+                            stack.push(stlValue(LIST_TO_STRING));
+                            continue;
+                        } else if (rhs.getIden() == "join") { // here
+                            stack.push(stlValue(LIST_JOIN));
+                            continue;
+                        }
+                    }
+                }
                 std::string message = "run-time error: object has no member " + rhs.getIden() + ". did you mean: [";
                 for (auto it = lhs.members.begin(); it != lhs.members.end(); it++) {
                     message += it->first + ", ";
@@ -610,7 +675,7 @@ do { \
                     message.pop_back();
                 }
                 error(message + "]");
-            }
+            } while (0);
         }
 
         else if (OP == OP_INDEX) {

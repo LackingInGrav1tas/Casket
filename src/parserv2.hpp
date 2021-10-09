@@ -179,7 +179,14 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                     }
                 }
                 if (is_float) PUSHC(floatValue(std::stof(current.value)));
-                else PUSHC(intValue(std::stoi(current.value)));
+                else {
+                    if (gen.peek_next_token().value == "byte") { // remove when as conversion implemented
+                        gen.next_token();
+                        PUSHC(byteValue((unsigned char) std::stoi(current.value)));
+                    } else {
+                        PUSHC(intValue(std::stoi(current.value)));
+                    }
+                }
             } catch(...) {
                 error("parsing error: couldn't parse number  token: " + current.toStr());
             }
