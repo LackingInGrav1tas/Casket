@@ -234,7 +234,7 @@ namespace lexertk
          e_lcrlbracket = '{', e_comma       = ',', e_add         = '+',
          e_sub         = '-', e_div         = '/', e_mul         = '*',
          e_mod         = '%', e_pow         = '^', e_colon       = ':',
-         e_exclamation = '!',
+         e_exclamation = '!', e_dot         = '.',
       };
 
       token()
@@ -305,6 +305,7 @@ namespace lexertk
       template <typename Iterator>
       inline token& set_error(const token_type et, const Iterator begin, const Iterator end, const Iterator base_begin = Iterator(0))
       {
+         std::cout << "ERROR TYPE: " << token::to_str(et) << std::endl;
          if (
               (e_error      == et) ||
               (e_err_symbol == et) ||
@@ -429,6 +430,10 @@ namespace lexertk
             }
          }
          return true;
+      }
+
+      token_list_t tokenlist() {
+         return token_list_;
       }
 
       inline bool empty() const
@@ -592,9 +597,19 @@ namespace lexertk
             scan_symbol();
             return;
          }
-         else if (details::is_digit((*s_itr_)) || ('.' == (*s_itr_)))
+         else if (details::is_digit((*s_itr_)))
          {
             scan_number();
+            return;
+         }
+         else if ('.' == (*s_itr_)) {
+            // HERE
+            token_t dot;
+            dot.type = token::token_type::e_dot;
+            dot.value = ".";
+            dot.position = 0;
+            token_list_.push_back(dot);
+            s_itr_++;
             return;
          }
          else if ('"' == (*s_itr_))
@@ -606,6 +621,7 @@ namespace lexertk
          {
             token_t t;
             t.set_error(token::e_error,s_itr_,s_itr_ + 2,base_itr_);
+            std::cout << "ERROR HERE" << std::endl;
             token_list_.push_back(t);
             ++s_itr_;
          }
@@ -819,6 +835,7 @@ namespace lexertk
          return;
       }
 
+   
    private:
 
       token_list_t token_list_;

@@ -49,7 +49,11 @@ int main(int argc, char ** argv) {
 
         lexertk::generator generator;
 
-        if (!generator.process(buf.str())) error(std::string("Failed to lex: ") + argv[1]);
+        if (!generator.process(buf.str())) {
+            std::cout << generator.tokenlist().back().toStr() << " " << Token::to_str(generator.tokenlist().back().type) << std::endl;
+            // lexertk::helper::dump(generator);
+            error(std::string("Failed to lex: ") + argv[1]);
+        }
         Machine vm;
         // std::cout << sizeof(vm) << "\n" << sizeof(vm.opcode) << std::endl;
         vm.init(generator);
@@ -64,7 +68,11 @@ int main(int argc, char ** argv) {
 
         lexertk::generator generator;
 
-        if (!generator.process(buf.str())) error(std::string("Failed to lex: ") + argv[1]);
+        if (!generator.process(buf.str())) {
+            std::cout << generator.tokenlist().back().toStr() << " " << Token::to_str(generator.tokenlist().back().type) << std::endl;
+            // lexertk::helper::dump(generator);
+            error(std::string("Failed to lex: ") + argv[1]);
+        }
         Machine vm;
         vm.init(generator);
         if (flags::debug) {

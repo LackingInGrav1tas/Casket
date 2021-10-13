@@ -36,6 +36,7 @@ static int getPrecedence(Type t, std::string s = "") {
         case Type::e_lsqrbracket : return 9;
         case Type::e_lcrlbracket : return 9;
         case Type::e_number      : return 9; // inst.member
+        case Type::e_dot         : return 9;
         default                  : return 0;
     }
 }
