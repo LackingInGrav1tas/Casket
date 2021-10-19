@@ -234,7 +234,7 @@ namespace lexertk
          e_lcrlbracket = '{', e_comma       = ',', e_add         = '+',
          e_sub         = '-', e_div         = '/', e_mul         = '*',
          e_mod         = '%', e_pow         = '^', e_colon       = ':',
-         e_exclamation = '!', e_dot         = '.',
+         e_exclamation = '!',
       };
 
       token()
@@ -474,12 +474,14 @@ namespace lexertk
 
       inline token_t& peek_next_token()
       {
+         std::cout << "pnt" << std::endl;
          if (token_list_.end() != token_itr_)
          {
             return *token_itr_;
          }
-         else
+         else {
             return eof_token_;
+         }
       }
 
       inline token_t& operator[](const std::size_t& index)
@@ -597,19 +599,9 @@ namespace lexertk
             scan_symbol();
             return;
          }
-         else if (details::is_digit((*s_itr_)))
+         else if (details::is_digit((*s_itr_)) || '.' == (*s_itr_))
          {
             scan_number();
-            return;
-         }
-         else if ('.' == (*s_itr_)) {
-            // HERE
-            token_t dot;
-            dot.type = token::token_type::e_dot;
-            dot.value = ".";
-            dot.position = 0;
-            token_list_.push_back(dot);
-            s_itr_++;
             return;
          }
          else if ('"' == (*s_itr_))
@@ -709,69 +701,74 @@ namespace lexertk
          bool post_e_digit_found = false;
          token_t t;
 
-         while (!is_end(s_itr_))
-         {
-            if ('.' == (*s_itr_))
+         if ('.' == (*s_itr_)) {
+            ++s_itr_;
+            // skip all this
+         } else {
+            while (!is_end(s_itr_))
             {
-               if (dot_found)
+               if ('.' == (*s_itr_))
                {
-                  t.set_error(token::e_err_number,begin,s_itr_,base_itr_);
-                  token_list_.push_back(t);
-                  return;
+                  if (dot_found)
+                  {
+                     t.set_error(token::e_err_number,begin,s_itr_,base_itr_);
+                     token_list_.push_back(t);
+                     return;
+                  }
+                  dot_found = true;
+                  ++s_itr_;
+                  continue;
                }
-               dot_found = true;
-               ++s_itr_;
-               continue;
-            }
-            else if (details::imatch('e',(*s_itr_)))
-            {
-               const char& c = *(s_itr_ + 1);
-
-               if (is_end(s_itr_ + 1))
+               else if (details::imatch('e',(*s_itr_)))
                {
-                  t.set_error(token::e_err_number,begin,s_itr_,base_itr_);
-                  token_list_.push_back(t);
-                  return;
+                  const char& c = *(s_itr_ + 1);
+
+                  if (is_end(s_itr_ + 1))
+                  {
+                     t.set_error(token::e_err_number,begin,s_itr_,base_itr_);
+                     token_list_.push_back(t);
+                     return;
+                  }
+                  else if (
+                           ('+' != c) &&
+                           ('-' != c) &&
+                           !details::is_digit(c)
+                        )
+                  {
+                     t.set_error(token::e_err_number,begin,s_itr_,base_itr_);
+                     token_list_.push_back(t);
+                     return;
+                  }
+
+                  e_found = true;
+                  ++s_itr_;
+                  continue;
                }
-               else if (
-                        ('+' != c) &&
-                        ('-' != c) &&
-                        !details::is_digit(c)
-                       )
+               else if (e_found && details::is_sign(*s_itr_) && !post_e_digit_found)
                {
-                  t.set_error(token::e_err_number,begin,s_itr_,base_itr_);
-                  token_list_.push_back(t);
-                  return;
-               }
+                  if (post_e_sign_found)
+                  {
+                     t.set_error(token::e_err_number,begin,s_itr_,base_itr_);
+                     token_list_.push_back(t);
+                     return;
+                  }
 
-               e_found = true;
-               ++s_itr_;
-               continue;
-            }
-            else if (e_found && details::is_sign(*s_itr_) && !post_e_digit_found)
-            {
-               if (post_e_sign_found)
+                  post_e_sign_found = true;
+                  ++s_itr_;
+                  continue;
+               }
+               else if (e_found && details::is_digit(*s_itr_))
                {
-                  t.set_error(token::e_err_number,begin,s_itr_,base_itr_);
-                  token_list_.push_back(t);
-                  return;
+                  post_e_digit_found = true;
+                  ++s_itr_;
+
+                  continue;
                }
-
-               post_e_sign_found = true;
-               ++s_itr_;
-               continue;
+               else if (('.' != (*s_itr_)) && !details::is_digit(*s_itr_))
+                  break;
+               else
+                  ++s_itr_;
             }
-            else if (e_found && details::is_digit(*s_itr_))
-            {
-               post_e_digit_found = true;
-               ++s_itr_;
-
-               continue;
-            }
-            else if (('.' != (*s_itr_)) && !details::is_digit(*s_itr_))
-               break;
-            else
-               ++s_itr_;
          }
 
          t.set_numeric(begin,s_itr_,base_itr_);

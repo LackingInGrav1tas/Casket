@@ -1,6 +1,7 @@
 #include "vm.hpp"
 #include "parserv2.hpp"
 #include "lexertk.hpp"
+// #include "lexer.hpp"
 #include "runtime.hpp"
 #include "flags.hpp"
 
@@ -51,7 +52,7 @@ int main(int argc, char ** argv) {
 
         if (!generator.process(buf.str())) {
             std::cout << generator.tokenlist().back().toStr() << " " << Token::to_str(generator.tokenlist().back().type) << std::endl;
-            // lexertk::helper::dump(generator);
+            lexertk::helper::dump(generator);
             error(std::string("Failed to lex: ") + argv[1]);
         }
         Machine vm;
@@ -70,15 +71,20 @@ int main(int argc, char ** argv) {
 
         if (!generator.process(buf.str())) {
             std::cout << generator.tokenlist().back().toStr() << " " << Token::to_str(generator.tokenlist().back().type) << std::endl;
-            // lexertk::helper::dump(generator);
+            lexertk::helper::dump(generator);
             error(std::string("Failed to lex: ") + argv[1]);
         }
+        std::cout << "\nLEXING DONE" << std::endl;
+        lexertk::helper::dump(generator);
         Machine vm;
         vm.init(generator);
         if (flags::debug) {
             vm.disassemble();
             lexertk::helper::dump(generator);
         }
-        return vm.run().getInt();
+        std::cout << "\nPARSING DONE\n" << std::endl;
+        int v = vm.run().getInt();
+        std::cout << "\n\nSUCCESS" << std::endl;
+        return v;
     }
 }

@@ -1,0 +1,8 @@
+identifier
+LINE BREAK
+
+thing++ /=
+
+"this is a string!"
+
+12305.123

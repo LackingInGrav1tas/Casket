@@ -30,13 +30,15 @@ enum LibraryCall {
 };
 
 struct Value {
-    LibraryCall stl_call;
-    int intiger;
-    float floating;
-    bool boolean;
+    union {
+        LibraryCall stl_call;
+        int intiger;
+        float floating;
+        bool boolean;
+        size_t pointer;
+        unsigned char byte;
+    };
     std::string str;
-    size_t pointer;
-    unsigned char byte;
     int box_location;
     int home_location;
     size_t fn;

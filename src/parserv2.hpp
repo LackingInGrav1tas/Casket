@@ -14,10 +14,13 @@ typedef lexertk::token Token;
 typedef lexertk::token::token_type Type;
 
 static int getPrecedence(Type t, std::string s = "") {
+    // std::cout << "GP" << std::endl;
     if (s == "&") {
         return 3;
     } else if (s == "|") {
         return 2;
+    } else if (s == ".") {
+        return 9;
     }
     switch (t) {
         case Type::e_ne          : return 4;
@@ -36,7 +39,6 @@ static int getPrecedence(Type t, std::string s = "") {
         case Type::e_lsqrbracket : return 9;
         case Type::e_lcrlbracket : return 9;
         case Type::e_number      : return 9; // inst.member
-        case Type::e_dot         : return 9;
         default                  : return 0;
     }
 }
@@ -209,12 +211,17 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         // std::cout << "peeking for precedence: " << gen.peek_next_token().toStr() << std::endl;
         while (p <= getPrecedence(gen.peek_next_token().type, gen.peek_next_token().value)) {
             NEXT();
+            // std::cout << current.value << std::endl;
             if (current.value == ".") {
                 NEXT();
+                // std::cout << "checking" << std::endl;
                 if (current.type != Type::e_symbol || invalidIdentifier(current.value))
                     error("parsing error: expected an identifier");
+                // std::cout << "PUSHC" << std::endl;
                 PUSHC(idenValue(current.value));
+                // std::cout << "PUSH" << std::endl;
                 PUSH(OP_GET_MEMBER);
+                // std::cout << "past" << std::endl;
             } else if (current.value == "&") {
                 if (gen.peek_next_token().value == "&") {
                     gen.next_token();
@@ -235,12 +242,15 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                 switch (current.type) {
                     case Type::e_add: {
                         if (gen.peek_next_token().value != "+") {
+                            // std::cout << "+!" << std::endl;
                             expression(getPrecedence(Type::e_add));
                             PUSH(OP_ADD);
                         } else {
+                            // std::cout << "++!" << std::endl;
                             gen.next_token();
                             PUSH(OP_INCREMENT);
                         }
+                        // std::cout << "breaking" << std::endl;
                         break;
                     }
                     case Type::e_sub: {
@@ -344,9 +354,17 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                         } else {
                             error("parsing error: expected a semicolon -- 390.");
                         }
+                        break;
+                    }
+                    default: {
+                        std::cout << "default" << std::endl;
                     }
                 }
+                // std::cout << "EOS" << std::endl;
             }
+            // std::cout << "looping" << std::endl;
+            std::cout << current.toStr() << std::endl;
+            // std::cout << "after peek" << std::endl;
         }
     };
 

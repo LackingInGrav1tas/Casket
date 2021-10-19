@@ -124,6 +124,8 @@ do { \
 } while (0)
 
     for (; ip < opcode.size(); ip++) {
+        // printOp(opcode[ip]);
+        // std::cout << std::endl;
         // std::cout << "#: " << ip << "  type: " << OP << std::endl;
         if (OP == OP_CONSTANT) {
             stack.push(INSTRUCTION.value);
@@ -543,15 +545,20 @@ do { \
                         }
                         Value prim = stack.top();
                         stack.pop();
-                        std::string s = "";
-                        for (int i = 0; i < prim.getList().size() - 1; i++) {
-                            s += heap.get(prim.getList()[i]).toString() + connector;
+                        if (prim.getList().size() == 0) {
+                            stack.push(strValue(""));
+                        } else {
+                            std::string s = "";
+                            for (int i = 0; i < prim.getList().size() - 1; i++) {
+                                s += heap.get(prim.getList()[i]).toString() + connector;
+                            }
+                            // std::cout << "pushing" << std::endl;
+                            stack.push(
+                                strValue(
+                                    s + heap.get(prim.getList()[prim.getList().size() - 1]).toString()
+                                )
+                            );
                         }
-                        stack.push(
-                            strValue(
-                                s + heap.get(prim.getList()[prim.getList().size() - 1]).toString()
-                            )
-                        );
                         break;
                     }
                     default: {
