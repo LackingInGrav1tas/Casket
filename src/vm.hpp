@@ -3,7 +3,7 @@
 
 #include "opcode.hpp"
 #include "error.hpp"
-#include "lexertk.hpp"
+#include "lexer.hpp"
 #include "classes.hpp"
 
 #include <stack>
@@ -99,7 +99,7 @@ struct Machine {
         ip = 0;
     }
     
-    void init(lexertk::generator &gen, bool fn_parsing = false);
+    void init(Lexer &lexer, bool fn_parsing = false);
 
     void serialize(std::ifstream file) {
         

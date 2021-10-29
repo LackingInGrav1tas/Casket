@@ -4,16 +4,21 @@
 #include <functional>
 
 #include "vm.hpp"
-#include "lexertk.hpp"
+#include "lexer.hpp"
 #include "error.hpp"
 #include "function.hpp"
 #include "memory.hpp"
 
-typedef lexertk::generator Generator;
-typedef lexertk::token Token;
-typedef lexertk::token::token_type Type;
+int indent = 0;
 
-static int getPrecedence(Type t, std::string s = "") {
+void print_debug(std::string s) {
+    for (int _ = 0; _ < indent; _++) {
+        std::cout << "    ";
+    }
+    std::cout << s << std::endl;
+}
+
+static int gp(TokenType t, std::string s = "") {
     // std::cout << "GP" << std::endl;
     if (s == "&") {
         return 3;
@@ -23,24 +28,32 @@ static int getPrecedence(Type t, std::string s = "") {
         return 9;
     }
     switch (t) {
-        case Type::e_ne          : return 4;
-        case Type::e_eq          : return 4;
-        case Type::e_lte         : return 5;
-        case Type::e_gte         : return 5;
-        case Type::e_lt          : return 5;
-        case Type::e_gt          : return 5;
-        case Type::e_add         : return 6;
-        case Type::e_sub         : return 6;
-        case Type::e_div         : return 7;
-        case Type::e_mul         : return 7;
-        case Type::e_mod         : return 7;
-        case Type::e_pow         : return 8;
-        case Type::e_lbracket    : return 9;
-        case Type::e_lsqrbracket : return 9;
-        case Type::e_lcrlbracket : return 9;
-        case Type::e_number      : return 9; // inst.member
-        default                  : return 0;
+        case ASSIGN        : return 1;
+        case NOT_EQUALITY  : return 4;
+        case EQUALITY      : return 4;
+        case LESS_EQUAL    : return 5;
+        case GREATER_EQUAL : return 5;
+        case LESS          : return 5;
+        case GREATER       : return 5;
+        case PLUS          : return 6;
+        case MINUS         : return 6;
+        case SLASH         : return 7;
+        case STAR          : return 7;
+        case PERCENT       : return 7;
+        case CARROT        : return 7;
+        case PLUS_PLUS     : return 8;
+        case MINUS_MINUS   : return 8;
+        case LEFT_PAREN    : return 9;
+        case LEFT_BRACE    : return 9;
+        case DECIMAL       : return 9;
+        default            : return 0;
     }
+}
+
+static inline int getPrecedence(TokenType t, std::string s = "") {
+    int ret = gp(t, s);
+    print_debug("GP(" + std::to_string(ret) + ")[" + s + "]");
+    return ret;
 }
 
 static bool invalidIdentifier(std::string id) {
@@ -50,19 +63,21 @@ static bool invalidIdentifier(std::string id) {
     id == "operator";
 }
 
-void Machine::init(Generator &gen, bool fn_parsing) {
+void Machine::init(Lexer &lexer, bool fn_parsing) {
     ip = 0;
     heap.init();
 
     #define NEXT() \
-        if (gen.peek_next_token().is_error()) \
-            error("parsing error: " + gen.peek_next_token().toStr()); \
-        Token current = gen.next_token();
+        if (lexer.peek_next_token().type == ERROR) \
+            lexer.error(lexer.peek_next_token(), "error"); \
+        Token current = lexer.next_token();
+
+    #define ERROR(token, message) lexer.error(token, message);
 
     #define SEMICOLON() \
-        if (gen.next_token().value != ";") { \
-            error("parsing error: expected a ';'  token: " + (gen.token_itr_-1)->toStr()); \
-        }
+        do { Token semicolon = lexer.next_token(); if (semicolon.type != SEMICOLON) { \
+            ERROR(semicolon, "parsing error: expected a ';'!"); \
+        } } while (0)
     
     #define PUSH(arg) opcode.push_back(newOpcode(arg))
     #define PUSHC(arg) opcode.push_back(OpConstant(arg))
@@ -71,108 +86,116 @@ void Machine::init(Generator &gen, bool fn_parsing) {
     std::function<void(int)> expression;
 
     std::function<void(int)> exp = [&](int p)->void {
-        Token current = *(gen.token_itr_-1);
-        // std::cout << "expression(" << current.toStr() << ")" << std::endl;
-        if CASE(Type::e_lbracket) { // group
+        Token current = lexer.last_token();
+        print_debug("expression(" + current.value + ")");
+        if CASE(LEFT_PAREN) { // group
             expression(1);
-            if (gen.token_itr_->type != Type::e_rbracket) {
-                error("parsing error: expected a ')'  token: " + gen.peek_next_token().toStr());
+            if (lexer.peek_next_token().type != RIGHT_PAREN) {
+                lexer.error(lexer.peek_next_token(), "parsing error: expected a ')'");
             }
-            gen.next_token();
-        } else if (current.type == Type::e_symbol && current.value == "inst") { // until stl
+            lexer.next_token();
+        } else if (current.type == INST) { // until stl
             NEXT();
-            if (current.type != Type::e_symbol || invalidIdentifier(current.value))
-                error("parsing error: expected a valid class name  token: " + current.toStr());
-            if (gen.next_token().type == Type::e_lbracket) {
+            if (current.type != T_IDENTIFIER || invalidIdentifier(current.value))
+                ERROR(current, "parsing error: expected a valid class name");
+            if (lexer.next_token().type == LEFT_PAREN) {
                 int i = 0;
-                if (gen.peek_next_token().type != Type::e_rbracket) {
+                if (lexer.peek_next_token().type != RIGHT_PAREN) {
                     while (1) {
                         i++;
-                        if (gen.peek_next_token().type != Type::e_symbol || invalidIdentifier(gen.peek_next_token().value))
-                            error("parsing error: expected a valid identifer  token: " + gen.peek_next_token().toStr());
-                        PUSHC(idenValue(gen.peek_next_token().value));
-                        gen.next_token();
-                        if (gen.next_token().value != "=") {
-                            error("parsing error: expected '='  token: " + gen.token_itr_->toStr());
+                        if (lexer.peek_next_token().type != T_IDENTIFIER || invalidIdentifier(lexer.peek_next_token().value))
+                            ERROR(lexer.peek_next_token(), "parsing error: expected a valid identifier");
+                        PUSHC(idenValue(lexer.peek_next_token().value));
+                        lexer.next_token();
+                        if (lexer.peek_next_token().value != "=") {
+                            ERROR(lexer.peek_next_token(), "parsing error: expected '='");
                         }
+                        lexer.next_token();
                         expression(2);
                         NEXT();
-                        if CASE(Type::e_comma) {
+                        if CASE(COMMA) {
                             // nada
-                        } else if CASE(Type::e_rbracket) {
+                        } else if CASE(RIGHT_PAREN) {
                             break;
                         }
                     }
                 } else {
-                    gen.next_token();
+                    lexer.next_token();
                 }
                 opcode.push_back(InstanceOpcode(current.value, i));
             } else {
-                error("parsing error: expected a ')'  token: " + gen.token_itr_->toStr());
+                ERROR(lexer.last_token(), "parsing error: expected a ')'");
             }
 
-        } else if CASE(Type::e_sub) {
+        } else if CASE(MINUS) {
             expression(7);
             PUSH(OP_NEGATE);
-        } else if CASE(Type::e_exclamation) {
+        } else if CASE(EXCLAMATION_MARK) {
             expression(7);
             PUSH(OP_NOT);
-        } else if (current.type == Type::e_symbol && current.value == "true") {
+        } else if (current.type == TRUE) {
             PUSHC(boolValue(true));
-        } else if (current.type == Type::e_symbol && current.value == "false") {
+        } else if (current.type == FALSE) {
             PUSHC(boolValue(false));
-        } else if (current.type == Type::e_symbol && current.value == "null") {
+        } else if (current.type == T_NIL) {
             PUSHC(nullValue());
-        } else if (current.type == Type::e_symbol && current.value == "fn") {
-            // std::cout << "fn" << std::endl;
-            if (gen.next_token().type != Type::e_lbracket) error("parsing error: expected a '(' after 'fn'  token: " + gen.token_itr_->toStr());
+        } else if (current.type == FN) {
+            print_debug("fn");
+            if (lexer.next_token().type != LEFT_PAREN)
+                ERROR(lexer.last_token(), "parsing error: expected a '(' after 'fn' token");
             Function fn;
             while (1) {
                 NEXT();
-                if CASE(Type::e_symbol) {
-                    if (invalidIdentifier(current.value)) error("parsing error: invalid identifier  token: " + gen.token_itr_->toStr());
+                print_debug("paren parsing: " + current.value + " " + std::to_string(current.type));
+                if CASE(T_IDENTIFIER) {
+                    print_debug("case identifier");
+                    if (invalidIdentifier(current.value))
+                        ERROR(lexer.last_token(), "parsing error: invalid identifier");
                     fn.args.push_back(current.value);
                     NEXT();
-                    if CASE(Type::e_comma) {
+                    if CASE(COMMA) {
                         // nada
-                    } else if CASE(Type::e_rbracket) {
+                    } else if CASE(RIGHT_PAREN) {
                         break;
                     } else {
-                        error("parsing error: expected either ')' or an identifier  token: " + gen.token_itr_->toStr());
+                        ERROR(lexer.last_token(), "parsing error: expected either ')' or an identifier");
                     }
-                } else if CASE(Type::e_rbracket) {
+                } else if CASE(RIGHT_PAREN) {
+                    print_debug("case r paren");
                     break;
                 } else {
-                    error("parsing error: expected an identifier  token: " + gen.token_itr_->toStr());
+                    ERROR(current, "parsing error: expected an identifier");
                 }
             }
-            if (gen.peek_next_token().type != Type::e_lcrlbracket) {
-                error("parsing error: expected a block  token: " + gen.peek_next_token().toStr());
+            if (lexer.peek_next_token().type != LEFT_BRACKET) {
+                ERROR(lexer.last_token(), "parsing error: expected a block token");
             }
             Machine vm;
-            // std::cout << "next: " << gen.peek_next_token().toStr() << std::endl;
-            vm.init(gen, true);
+            // std::cout << "next: " << lexer.peek_next_token().toStr() << std::endl;
+            vm.init(lexer, true);
             // std::cout << "done with it!" << std::endl;
             // vm.disassemble();
             fn.vm = vm;
             int fn_loc = heap.fn_add(fn);
             // std::cout << "function stored @ " << fn_loc << ":" << std::endl;
+            print_debug(std::to_string(fn.args.size()));
             PUSHC(funValue(fn_loc));
-        } else if (current.type == Type::e_symbol && current.value == "&") {
+            print_debug("FN DONE - " + lexer.peek_next_token().value);
+        } else if (current.type == BIT_AND) {
             expression(8);
             PUSH(OP_REFERENCE);
-        } else if CASE(Type::e_mul) {
+        } else if CASE(STAR) {
             expression(8);
             PUSH(OP_DEREFERENCE);
-        } else if CASE(Type::e_colon) {
+        } else if CASE(COLON) {
             expression(8);
             PUSH(OP_COPY);
-        } else if CASE(Type::e_symbol) {
+        } else if CASE(T_IDENTIFIER) {
             if (invalidIdentifier(current.value) && current.value != "this")
-                error("parsing error: expected a valid identifier  token: " + current.toStr());
+                ERROR(current, "parsing error: expected a valid identifier");
             PUSHC(idenValue(current.value));
             PUSH(OP_GET_VARIABLE);
-        } else if CASE(Type::e_number) {
+        } else if CASE(T_NUMBER) {
             try {
                 int is_float = false;
                 for (int i = 0; i < current.value.length(); i++) {
@@ -183,212 +206,203 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                 }
                 if (is_float) PUSHC(floatValue(std::stof(current.value)));
                 else {
-                    if (gen.peek_next_token().value == "byte") { // remove when as conversion implemented
-                        gen.next_token();
+                    if (lexer.peek_next_token().value == "byte") { // remove when as conversion implemented
+                        lexer.next_token();
                         PUSHC(byteValue((unsigned char) std::stoi(current.value)));
                     } else {
                         PUSHC(intValue(std::stoi(current.value)));
                     }
                 }
             } catch(...) {
-                error("parsing error: couldn't parse number  token: " + current.toStr());
+                ERROR(current, "parsing error: couldn't parse number");
             }
-        } else if CASE(Type::e_string) {
+        } else if CASE(T_STRING) {
             PUSHC(strValue(current.value));
-        } else if CASE(Type::e_lsqrbracket) {
+        } else if CASE(LEFT_BRACE) {
             int i = 0;
-            while (gen.peek_next_token().type != Type::e_rsqrbracket) {
+            while (lexer.peek_next_token().type != RIGHT_BRACE) {
                 expression(2);
-                // std::cout << gen.peek_next_token().value << std::endl;
-                if (gen.peek_next_token().value == ",") gen.next_token();
+                // std::cout << lexer.peek_next_token().value << std::endl;
+                if (lexer.peek_next_token().value == ",") lexer.next_token();
                 i++;
             }
-            gen.next_token();
+            lexer.next_token();
             opcode.push_back(ListOpcode(i));
         } else {
-            error("parsing error: expected an expression  token: " + current.toStr());
+            ERROR(current, "parsing error: expected an expression");
         }
-        // std::cout << "peeking for precedence: " << gen.peek_next_token().toStr() << std::endl;
-        while (p <= getPrecedence(gen.peek_next_token().type, gen.peek_next_token().value)) {
+        // std::cout << "peeking for precedence: " << lexer.peek_next_token().toStr() << std::endl;
+        while (p <= getPrecedence(lexer.peek_next_token().type, lexer.peek_next_token().value)) {
             NEXT();
             // std::cout << current.value << std::endl;
             if (current.value == ".") {
                 NEXT();
                 // std::cout << "checking" << std::endl;
-                if (current.type != Type::e_symbol || invalidIdentifier(current.value))
-                    error("parsing error: expected an identifier");
+                if (current.type != T_IDENTIFIER || invalidIdentifier(current.value))
+                    ERROR(current, "parsing error: expected an identifier");
                 // std::cout << "PUSHC" << std::endl;
                 PUSHC(idenValue(current.value));
                 // std::cout << "PUSH" << std::endl;
                 PUSH(OP_GET_MEMBER);
                 // std::cout << "past" << std::endl;
             } else if (current.value == "&") {
-                if (gen.peek_next_token().value == "&") {
-                    gen.next_token();
+                if (lexer.peek_next_token().value == "&") {
+                    lexer.next_token();
                     expression(2);
                     PUSH(OP_AND);
                 } else {
-                    error("parsing error: expected a ';'  token: " + gen.peek_next_token().toStr());
+                    ERROR(lexer.peek_next_token(), "parsing error: expected a ';D'");
                 }
             } else if (current.value == "|") {
-                if (gen.peek_next_token().value == "|") {
-                    gen.next_token();
+                if (lexer.peek_next_token().value == "|") {
+                    lexer.next_token();
                     expression(1);
                     PUSH(OP_OR);
                 } else {
-                    error("parsing error: expected a ';'  token: " + gen.peek_next_token().toStr());
+                    ERROR(lexer.peek_next_token(), "parsing error: expected a ';('");
                 }
             } else {
                 switch (current.type) {
-                    case Type::e_add: {
-                        if (gen.peek_next_token().value != "+") {
-                            // std::cout << "+!" << std::endl;
-                            expression(getPrecedence(Type::e_add));
-                            PUSH(OP_ADD);
-                        } else {
-                            // std::cout << "++!" << std::endl;
-                            gen.next_token();
-                            PUSH(OP_INCREMENT);
-                        }
-                        // std::cout << "breaking" << std::endl;
+                    case PLUS: {
+                        expression(getPrecedence(PLUS));
+                        PUSH(OP_ADD);
                         break;
                     }
-                    case Type::e_sub: {
-                        if (gen.peek_next_token().value != "-") {
-                            expression(getPrecedence(Type::e_sub));
-                            PUSH(OP_SUBTRACT);
-                        } else {
-                            gen.next_token();
-                            PUSH(OP_DECREMENT);
-                        }
+                    case PLUS_PLUS: {
+                        lexer.next_token();
+                        PUSH(OP_INCREMENT);
                         break;
                     }
-                    case Type::e_mul: {
-                        expression(getPrecedence(Type::e_mul));
+                    case MINUS: {
+                        expression(getPrecedence(MINUS));
+                        PUSH(OP_SUBTRACT);
+                        break;
+                    }
+                    case MINUS_MINUS: {
+                        lexer.next_token();
+                        PUSH(OP_DECREMENT);
+                        break;
+                    }
+                    case STAR: {
+                        expression(getPrecedence(STAR));
                         PUSH(OP_MULTIPLY);
                         break;
                     }
-                    case Type::e_div: {
-                        expression(getPrecedence(Type::e_div));
+                    case SLASH: {
+                        expression(getPrecedence(SLASH));
                         PUSH(OP_DIVIDE);
                         break;
                     }
-                    case Type::e_mod: {
-                        expression(getPrecedence(Type::e_mod));
+                    case PERCENT: {
+                        expression(getPrecedence(PERCENT));
                         PUSH(OP_MODULO);
                         break;
                     }
-                    case Type::e_lt: {
-                        expression(getPrecedence(Type::e_lt));
+                    case LESS: {
+                        expression(getPrecedence(LESS));
                         PUSH(OP_LESS);
                         break;
                     }
-                    case Type::e_gt: {
-                        expression(getPrecedence(Type::e_gt));
+                    case GREATER: {
+                        expression(getPrecedence(GREATER));
                         PUSH(OP_MORE);
                         break;
                     }
-                    case Type::e_lte: {
-                        expression(getPrecedence(Type::e_lte));
+                    case LESS_EQUAL: {
+                        expression(getPrecedence(LESS_EQUAL));
                         PUSH(OP_LESS_EQ);
                         break;
                     }
-                    case Type::e_gte: {
-                        expression(getPrecedence(Type::e_gte));
+                    case GREATER_EQUAL: {
+                        expression(getPrecedence(GREATER_EQUAL));
                         PUSH(OP_MORE_EQ);
                         break;
                     }
-                    case Type::e_eq: {
-                        if (current.value == "==") {
-                            expression(getPrecedence(Type::e_eq));
-                            PUSH(OP_EQUALITY);
-                        } else {
-                            expression(2);
-                            PUSH(OP_EDIT_VARIABLE);
-                        }
+                    case EQUALITY: {
+                        expression(getPrecedence(EQUALITY));
+                        PUSH(OP_EQUALITY);
                         break;
                     }
-                    case Type::e_ne: {
-                        expression(getPrecedence(Type::e_ne));
+                    case ASSIGN: {
+                        expression(2);
+                        PUSH(OP_EDIT_VARIABLE);
+                        break;
+                    }
+                    case NOT_EQUALITY: {
+                        expression(getPrecedence(NOT_EQUALITY));
                         PUSH(OP_NOT_EQUAL);
                         break;
                     }
 
-                    case Type::e_lbracket: {
+                    case LEFT_PAREN: {
                         int i = 0;
-                        if (gen.peek_next_token().type != Type::e_rbracket) {
+                        if (lexer.peek_next_token().type != RIGHT_PAREN) {
                             while (1) {
                                 i++;
                                 expression(2);
                                 NEXT();
-                                if (current.type == Type::e_comma) {
+                                if (current.type == COMMA) {
                                     // nada
-                                } else if (current.type == Type::e_rbracket) {
+                                } else if (current.type == RIGHT_PAREN) {
                                     break;
                                 }
                             }
                         } else {
-                            gen.next_token();
+                            lexer.next_token();
                         }
                         opcode.push_back(callOpcode(i));
                         break;
                     }
 
-                    case Type::e_lsqrbracket: {
+                    case LEFT_BRACE: {
                         expression(2);
                         NEXT();
-                        if (current.type != Type::e_rsqrbracket) {
-                            error("parsing error: expected a ']' " + current.toStr());
+                        if (current.type != RIGHT_BRACE) {
+                            ERROR(current, "parsing error: expected a ']'");
                         }
                         PUSH(OP_INDEX);
                         break;
                     }
 
-                    case Type::e_number: {
-                        if (current.value == ".") {
-                            NEXT();
-                            if (current.type != Type::e_symbol || invalidIdentifier(current.value))
-                                error("parsing error: expected an identifier  token: " + current.toStr());
-                            PUSHC(idenValue(current.value));
-                            PUSH(OP_GET_MEMBER);
-                        } else {
-                            error("parsing error: expected a semicolon -- 390.");
-                        }
+                    case DECIMAL: {
+                        NEXT();
+                        if (current.type != T_IDENTIFIER || invalidIdentifier(current.value))
+                            ERROR(current, "parsing error: expected a valid identifier");
+                        PUSHC(idenValue(current.value));
+                        PUSH(OP_GET_MEMBER);
                         break;
                     }
                     default: {
-                        std::cout << "default" << std::endl;
+                        std::cerr << "SHOULD BE UNREACHABLE (" << current.type << ")" << std::endl;
+                        exit(1);
                     }
                 }
-                // std::cout << "EOS" << std::endl;
             }
-            // std::cout << "looping" << std::endl;
-            std::cout << current.toStr() << std::endl;
-            // std::cout << "after peek" << std::endl;
         }
     };
 
     expression = [&](int p)->void {
-        gen.next_token();
+        lexer.next_token();
         exp(p);
     };
 
     std::function<void()> declaration = [&]() -> void {
-        Token check = gen.next_token();
-        // std::cout << "declaration(" << check.toStr() << ")" << std::endl;
+        Token check = lexer.next_token();
+        print_debug("declaration(" + check.value + ") {");
+        indent++;
         if (check.value == "set") {
             NEXT();
             std::string id = current.value;
-            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
-                error("parsing error: invalid identifier  token: " + current.toStr());
-            std::string nxt = gen.next_token().value;
+            if (current.type != T_IDENTIFIER || invalidIdentifier(current.value) )
+                ERROR(current, "parsing error: invalid identifier");
+            std::string nxt = lexer.next_token().value;
             if (nxt != "=") {
                 if (nxt == ";") {
                     PUSHC(nullValue());
                     opcode.push_back(spOpcode(OP_SET_VARIABLE, id));
                     return;
                 } else 
-                    error("parsing error: expected '='  token: " + gen.token_itr_->toStr());
+                    ERROR(lexer.last_token(), "parsing error: expected a '='");
             }
                 
 
@@ -398,20 +412,22 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             
             opcode.push_back(spOpcode(OP_SET_VARIABLE, id));
         } else if (check.value == "if") {
-            if (gen.next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen.peek_next_token().toStr());
+            if (lexer.next_token().type != LEFT_PAREN)
+                ERROR(lexer.peek_next_token(), "parsing error: expected a '('");
             
             expression(2);
 
-            if (gen.next_token().value != ")") error("parsing error: expected a ')'  token: " + gen.token_itr_->toStr());
+            if (lexer.next_token().value != ")")
+                ERROR(lexer.last_token(), "parsing error: expected a ')'");
 
             PUSH(OP_ERROR);
             int size = opcode.size();
 
             declaration();
 
-            //std::cout << "\nvalue = " << gen.token_itr_->value << std::endl;
-            if (gen.token_itr_->value == "else") {
-                gen.next_token();
+            //std::cout << "\nvalue = " << lexer.last_token().value << std::endl;
+            if (lexer.last_token().value == "else") {
+                lexer.next_token();
                 PUSH(OP_ERROR);
                 int elsesize = opcode.size();
 
@@ -426,14 +442,16 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         } else if (check.value == "while") {
             PUSH(OP_BEGIN_SCOPE);
             NEXT();
-            if (current.type != Type::e_lbracket) error("parsing error: expected '('  token: " + current.toStr());
+            if (current.type != LEFT_PAREN)
+                ERROR(current, "parsing error: expected a '('");
             
             int at_condition_size = opcode.size();
 
             expression(2);
 
-            Token end_br = gen.next_token();
-            if (end_br.type != Type::e_rbracket) error("parsing error: expected ')'  token: " + end_br.toStr());
+            Token end_br = lexer.next_token();
+            if (end_br.type != RIGHT_PAREN)
+                ERROR(end_br, "parsing error: expected a ')'");
 
             int size = opcode.size(); // points to below jump
             PUSH(OP_ERROR);
@@ -446,7 +464,7 @@ void Machine::init(Generator &gen, bool fn_parsing) {
 
             PUSH(OP_END_SCOPE);
         } else if (check.value == "for") {
-            if (gen.next_token().type != Type::e_lbracket) error("parsing error: expected a '('  token: " + gen[gen.peek_next_token().position-1].toStr());
+            if (lexer.next_token().type != LEFT_PAREN) ERROR(lexer.last_token(), "parsing error: expected a '('");
             declaration(); // for (; 
             PUSH(OP_BEGIN_SCOPE);
 
@@ -463,7 +481,8 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             expression(1); // iter
             int iter_post_size = opcode.size();
 
-            if (gen.next_token().type != Type::e_rbracket) error("parsing error: expected a ')'  token: " + gen[gen.peek_next_token().position-1].toStr());
+            Token bracket = lexer.next_token();
+            if (bracket.type != RIGHT_PAREN) ERROR(bracket, "parsing error: expected a ')'");
 
             declaration();
 
@@ -480,49 +499,51 @@ void Machine::init(Generator &gen, bool fn_parsing) {
 
         } else if (check.value == "class") {
             NEXT();
-            if (current.type != Type::e_symbol || invalidIdentifier(current.value)) {
-                error("parsing error: expected a valid identifier  token: " + current.toStr());
+            if (current.type != T_IDENTIFIER || invalidIdentifier(current.value)) {
+                ERROR(current, "parsing error: expected a valid identifier");
             }
             std::string name = current.value;
-            if (gen.next_token().type != Type::e_lcrlbracket) {
-                error("parsing error: expected a valid identifier  token: " + gen.peek_next_token().toStr());
+            if (lexer.next_token().type != LEFT_BRACKET) {
+                ERROR(lexer.peek_next_token(), "parsing error: expected a valid identifier")
             }
 
             int i = 0;
             while (1) {
-                if (gen.peek_next_token().type == Type::e_rcrlbracket) {
+                if (lexer.peek_next_token().type == RIGHT_BRACKET) {
                     break;
                 } else {
                     i++;
-                    Token tname = gen.next_token();
+                    Token tname = lexer.next_token();
+
                     if (tname.value == "operator") {
-                        Token ntk = gen.next_token();
+                        Token ntk = lexer.next_token();
+                        print_debug("method(" + ntk.value + ")");
                         #define EQUALS(op) op == ntk.value
                         if (EQUALS("+")) {
-                            if (gen.peek_next_token().value == "+") {
+                            if (lexer.peek_next_token().value == "+") {
                                 PUSHC(idenValue("++"));
-                                gen.next_token();
+                                lexer.next_token();
                             } else {
                                 PUSHC(idenValue("+"));
                             }
                         } else if (EQUALS("-")) {
-                            if (gen.peek_next_token().value == "-") {
+                            if (lexer.peek_next_token().value == "-") {
                                 PUSHC(idenValue("--"));
-                                gen.next_token();
+                                lexer.next_token();
                             } else {
                                 PUSHC(idenValue("-"));
                             }
                         } else if (EQUALS("=")) {
-                            if (gen.peek_next_token().value == "=") {
+                            if (lexer.peek_next_token().value == "=") {
                                 PUSHC(idenValue("=="));
-                                gen.next_token();
+                                lexer.next_token();
                             } else {
-                                error("parsing error: '=' is not bindable  token: " + ntk.toStr());
+                                ERROR(ntk, "parsing error: '=' is not bindable");
                             }
                         } else if (EQUALS("!")) {
-                            if (gen.peek_next_token().value == "=") {
+                            if (lexer.peek_next_token().value == "=") {
                                 PUSHC(idenValue("!="));
-                                gen.next_token();
+                                lexer.next_token();
                             } else {
                                 PUSHC(idenValue("!"));
                             }
@@ -532,26 +553,27 @@ void Machine::init(Generator &gen, bool fn_parsing) {
                         } else if (EQUALS("prefix_negate")) {
                             PUSHC(idenValue("prefix-"));
                         } else {
-                            error("parsing error: expected an operator to bind to,  token: " + ntk.toStr());
+                            ERROR(ntk, "parsing error: expected a bindable operator");
                         }
                         #undef EQUALS
-                        // gen.next_token();
-                    } else if (tname.type != Type::e_symbol || invalidIdentifier(tname.value)) {
-                        error("parsing error: expected an identifier  !!  token: " + tname.toStr());
+                        // lexer.next_token();
+                    } else if (tname.type != T_IDENTIFIER || invalidIdentifier(tname.value)) {
+                        ERROR(tname, "parsing error: expected an identifier");
                     } else {
+                        print_debug("method(" + tname.value + ")");
                         PUSHC(idenValue(tname.value));
                     }
                     NEXT();
-                    if CASE(Type::e_colon) {
+                    if CASE(COLON) {
                         expression(1);
                         NEXT();
                         if (current.value == ";") {
                             // nada
-                        } else if CASE(Type::e_rbracket) {
+                        } else if CASE(RIGHT_PAREN) {
                             break;
                         }
                     } else if (current.value != ";") {
-                        error("parsing error: expected either ';' or ':'  token: " + current.toStr());
+                        ERROR(current, "parsing error: expected either ';' or ':'");
                     } else {
                         PUSHC(nullValue());
                     }
@@ -560,25 +582,23 @@ void Machine::init(Generator &gen, bool fn_parsing) {
 
             opcode.push_back(DeclClassOpcode(name, i));
 
-            // exempt = true;
-
-            gen.next_token();
+            lexer.next_token();
         } else if (check.value == "{") {
             opcode.push_back(newOpcode(OP_BEGIN_SCOPE));
-            while (!gen.finished()) {
+            while (!lexer.done()) {
                 declaration();
-                if (gen.peek_next_token().value == "}") {
-                    gen.next_token();
+                if (lexer.peek_next_token().value == "}") {
+                    lexer.next_token();
                     break;
                 }
             }
-            // if (gen.finished()) error("parsing error: unclosed bracket");
+            // if (lexer.finished()) error("parsing error: unclosed bracket");
             opcode.push_back(newOpcode(OP_END_SCOPE));
         } else if (check.value == "label") {
             NEXT();
             std::string id = current.value;
-            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
-                error("parsing error: invalid identifier  token: " + current.toStr());
+            if (current.type != T_IDENTIFIER || invalidIdentifier(current.value) )
+                ERROR(current, "parsing error: invalid identifier");
 
             OpcodeObject op;
             op.lexeme = id;
@@ -588,8 +608,8 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         } else if (check.value == "goto") {
             NEXT();
             std::string id = current.value;
-            if (current.type != Type::e_symbol || invalidIdentifier(current.value) )
-                error("parsing error: invalid identifier  token: " + current.toStr());
+            if (current.type != T_IDENTIFIER || invalidIdentifier(current.value) )
+                ERROR(current, "parsing error: invalid identifier");
 
             OpcodeObject op;
             op.lexeme = id;
@@ -599,11 +619,11 @@ void Machine::init(Generator &gen, bool fn_parsing) {
         } else if (check.value == "print") { // until stl
             expression(2);
             PUSH(OP_PRINT_POP);
-            while (gen.next_token().value != ";") {
+            while (lexer.next_token().value != ";") {
                 expression(2);
                 PUSH(OP_PRINT_POP);
-                if (gen.peek_next_token().value != "," && gen.peek_next_token().value != ";")
-                    error("parsing error: expected either ',' or ';'  : " + gen.peek_next_token().toStr());
+                if (lexer.peek_next_token().value != "," && lexer.peek_next_token().value != ";")
+                    ERROR(lexer.peek_next_token(), "parsing error: expected either ',' or ';'");
             }
         } else if (check.value == "return") { // until stl
             expression(2);
@@ -615,10 +635,12 @@ void Machine::init(Generator &gen, bool fn_parsing) {
             exp(1);
             SEMICOLON();
         }
+        indent--;
+        print_debug("}");
     };
 
     opcode.push_back(newOpcode(OP_BEGIN_SCOPE));
-    while (!gen.finished()) {
+    while (!lexer.done()) {
         declaration();
         if (fn_parsing) break;
     }

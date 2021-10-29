@@ -4,6 +4,8 @@
 #include "vm.hpp"
 #include "memory.hpp"
 
+#include <algorithm>
+
 Value Machine::run() {
     // TODO: when a fn returns an object, reset it's box location unless it returns &
     #define POP() if (stack.size() == 0) error("run-time error: stack underflow"); else stack.pop()
@@ -41,6 +43,7 @@ do { \
                     stack.push(fn.vm.run()); \
                     continue; \
                 } else { \
+                    std::cout << fn.args.size() << std::endl;\
                     error("run-time error: expected 1 arguement for " + top.toString() + "'s " + trait + " implementation"); \
                 } \
             } \

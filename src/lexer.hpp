@@ -1,3 +1,6 @@
+#ifndef LEXER_HPP
+#define LEXER_HPP
+
 #include <vector>
 #include <string>
 #include <iostream>
@@ -23,7 +26,7 @@ enum TokenType {
     BIT_AND,
     OR,
     BIT_OR,
-    EQUALS,
+    ASSIGN,
     EQUALITY,
     NOT_EQUALITY,
     GREATER,
@@ -60,11 +63,11 @@ enum TokenType {
     CARROT,
     EXCLAMATION_MARK,
 
-    IDENTIFIER,
-    NUMBER,
-    STRING,
+    T_IDENTIFIER,
+    T_NUMBER,
+    T_STRING,
     
-    NIL,
+    T_NIL,
     TRUE,
     FALSE,
     WHILE,
@@ -118,6 +121,7 @@ private:
     std::vector<std::string> lines;
     std::string source;
     TokenCache cache;
+    TokenCache last;
 
     char _get() {
         char c = source[0];
@@ -144,13 +148,14 @@ private:
                 }
                 if (lexeme == "true") ADD_TOKEN(TRUE);
                 else if (lexeme == "false") ADD_TOKEN(FALSE);
-                else if (lexeme == "null") ADD_TOKEN(NIL);
+                else if (lexeme == "null") ADD_TOKEN(T_NIL);
                 else if (lexeme == "for") ADD_TOKEN(FOR);
                 else if (lexeme == "while") ADD_TOKEN(WHILE);
                 else if (lexeme == "false") ADD_TOKEN(FALSE);
                 else if (lexeme == "fn") ADD_TOKEN(FN);
                 else if (lexeme == "new") ADD_TOKEN(INST);
-                else ADD_TOKEN(IDENTIFIER);
+                else if (lexeme == "set") ADD_TOKEN(SET);
+                else ADD_TOKEN(T_IDENTIFIER);
             } else if (text::digit(lexeme[0])) { // parse number
                 while (text::digit(SRC)) {
                     lexeme += _get();
@@ -161,7 +166,7 @@ private:
                         lexeme += _get();
                     }
                 }
-                ADD_TOKEN(NUMBER);
+                ADD_TOKEN(T_NUMBER);
             } else if (lexeme[0] == '"') { // parse string
                 while (true) {
                     if (SRC == '"') {
@@ -195,7 +200,8 @@ private:
                     }
                 }
                 lexeme += _get();
-                ADD_TOKEN(STRING);
+                lexeme = lexeme.substr(1,lexeme.length()-2);
+                ADD_TOKEN(T_STRING);
             } else if (lexeme[0] == ' ' || lexeme[0] == '\t' || lexeme[0] == '\r') {
                 lexeme.pop_back();
             } else if (lexeme[0] == '\n') {
@@ -301,7 +307,23 @@ private:
                             lexeme += _get();
                             ADD_TOKEN(EQUALITY);
                         } else {
-                            ADD_TOKEN(EQUALS);
+                            ADD_TOKEN(ASSIGN);
+                        }
+                    }
+                    case '<': {
+                        if (NEXT('=')) {
+                            lexeme += _get();
+                            ADD_TOKEN(LESS_EQUAL);
+                        } else {
+                            ADD_TOKEN(LESS);
+                        }
+                    }
+                    case '>': {
+                        if (NEXT('=')) {
+                            lexeme += _get();
+                            ADD_TOKEN(GREATER_EQUAL);
+                        } else {
+                            ADD_TOKEN(GREATER);
                         }
                     }
                     case '(': ADD_TOKEN(LEFT_PAREN);
@@ -328,15 +350,20 @@ public:
     Lexer(std::string s) {
         source = s;
         cache.empty = true;
+        last.empty = true;
         lines.push_back(std::string());
     }    
 
     Token next_token() {
         if (!cache.empty) {
             cache.empty = true;
-            return cache.stored;
+            last.empty = false;
+            last.stored = cache.stored;
+            return last.stored;
         } else {
-            return _parse_next();
+            last.empty = false;
+            last.stored = _parse_next();
+            return last.stored;
         }
     }
 
@@ -348,15 +375,29 @@ public:
         return cache.stored;
     }
 
+    Token last_token() {
+        if (!last.empty) {
+            return last.stored;
+        } else {
+            std::cerr << "no 'last' token exists" << std::endl;
+        }
+    }
+
     inline bool done() {
         return source.length() == 0;
     }
 
     void error(Token error_token, std::string message) {
         for (int i = 0; i < lines.size(); i++) {
-            lines[i] = std::to_string(i) + " | " + lines[i];
+            lines[i] = std::to_string(i+1) + " | " + lines[i];
         }
-        std::cerr << message << std::endl << *(error_token.context.line);
+        std::cerr << message << " [\"" << error_token.value << "\" " << error_token.type << "]" << std::endl << *(error_token.context.line) << std::endl;
+        for (int i = 0; i < (*(error_token.context.line)).length() - error_token.value.length(); i++)
+            std::cerr << " ";
+        for (int i = 0; i < error_token.value.length(); i++)
+            std::cerr << "^";
         exit(1);
     }
 };
+
+#endif

@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     Token current;
     for (int i = 0; !lexer.done(); i++) {
         current = lexer.next_token();
-        PRINT("(" << i << ") " << current.value << " " << current.type << " " << *(current.context.line) << " " << current.is((std::vector<TokenType>){IDENTIFIER}));
+        PRINT("(" << i << ") " << current.value << " " << current.type << " " << *(current.context.line) << " " << current.is((std::vector<TokenType>){T_IDENTIFIER}));
     }
     std::cout << "\nEND" << std::endl;
 }
