@@ -103,6 +103,7 @@ struct VirtualMemory {
 
 } heap;
 
+
 std::string Value::toString() {
     switch (type) {
         case INTIGER:

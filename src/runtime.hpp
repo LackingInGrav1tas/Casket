@@ -297,16 +297,20 @@ do { \
             SIDES();
             if (lhs.type == FLOAT && ( rhs.type == FLOAT || rhs.type == INTIGER )) {
                 if (rhs.type == FLOAT) {
+                    if (rhs.getFloat() == 0) rhs.error("division by zero");
                     stack.push(floatValue( lhs.getFloat() / rhs.getFloat() ));
                 } else if (rhs.type == INTIGER) {
+                    if (rhs.getInt() == 0) rhs.error("division by zero");
                     stack.push(floatValue( lhs.getFloat() / rhs.getInt() ));
                 } else {
                     rhs.error("invalid type for operation"); 
                 }
             } else if (lhs.type == INTIGER && ( rhs.type == FLOAT || rhs.type == INTIGER )) {
                 if (rhs.type == FLOAT) {
+                    if (rhs.getFloat() == 0) rhs.error("division by zero");
                     stack.push(floatValue( lhs.getInt() / rhs.getFloat() ));
                 } else if (rhs.type == INTIGER) {
+                    if (rhs.getInt() == 0) rhs.error("division by zero");
                     stack.push(floatValue( lhs.getInt() / rhs.getInt() ));
                 } else {
                     rhs.error("invalid type for operation"); 

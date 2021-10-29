@@ -28,6 +28,8 @@ int main(int argc, char ** argv) {
             flags::load = true;
     }
 
+    heap.init();
+
     
     if (flags::load) {
         if (flags::debug) std::cout << "LOADING" << std::endl;
