@@ -46,6 +46,7 @@ enum Opcode {
 
     OP_RETURN_POP=27,
     OP_PRINT_POP=28,
+    OP_INPUT=39,
 
     OP_LABEL=29,
     OP_GOTO_LABEL=30,
@@ -60,6 +61,9 @@ enum Opcode {
 
     OP_INCREMENT=37,
     OP_DECREMENT=38,
+
+    OP_PYTHON_RUN=40,
+    OP_DEBUG_SCOPES=41,
 };
 
 struct OpcodeObject {

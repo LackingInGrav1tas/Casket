@@ -101,9 +101,7 @@ struct Machine {
     
     void init(Lexer &lexer, bool fn_parsing = false);
 
-    void serialize(std::ifstream file) {
-        
-    }
+    void initialize_standard_library();
 
     void disassemble() {
         #define OP opcode[i]

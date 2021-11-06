@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+// #include <Python.h>
+
 Value Machine::run() {
     // TODO: when a fn returns an object, reset it's box location unless it returns &
     #define POP() if (stack.size() == 0) error("run-time error: stack underflow"); else stack.pop()
@@ -138,6 +140,10 @@ do { \
             // notation: set var = value
             TOP();
             scopes.back()[INSTRUCTION.lexeme] = heap.add(top);
+        } else if (OP == OP_INPUT) {
+            std::string buffer;
+            std::getline(std::cin, buffer);
+            stack.push(strValue(buffer));
         } else if (OP == OP_GET_VARIABLE) {
             TOP();
             bool found = false;
@@ -591,6 +597,43 @@ do { \
                 for (int i = 0; i < scopes.size(); i++) scopes[i] = f.vm.scopes[i];
             }
 
+        } else if (OP == OP_PYTHON_RUN) {
+            /*TOP();
+            std::string s;
+            if (top.type == INSTANCE) {
+                auto it = top.members.find("to_string");
+                if (it != top.members.end()) {
+                    if (heap.get(it->second).type == FUNCTION) {
+                        auto fn = heap.fn_get(heap.get(it->second).getFun());
+                        if (fn.args.size() == 0) {
+                            Scope layer;
+                            layer["this"] = top.box_location;
+                            fn.vm.scopes.push_back(layer);
+                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                            s = fn.vm.run().getStr();
+                            continue;
+                        } else {
+                            error("run-time error: expected 0 arguements for " + top.toString() + "'s to_string implementation");
+                        }
+                    }
+                }
+            } else {
+                s = top.toString();
+            }
+
+            if (top.type == STRING) s = s.substr(1, s.length()-2);
+            
+            Py_Initialize();
+            PyRun_SimpleString(s.c_str());
+            Py_Finalize();*/
+        } else if (OP == OP_DEBUG_SCOPES) {
+            for (int i = 0; i < scopes.size(); i++) {
+                std::cout << "\n ==SCOPE " << i << "== " << std::endl;
+                for (auto p = scopes[i].begin(); p != scopes[i].end(); p++) {
+                    std::cout << "[@" << p->second << "] " << p->first << " : " << heap.get(p->second).toString() << std::endl;
+                }
+            }
+
         } else if (OP == OP_PRINT_POP) {
             TOP();
             if (top.type == INSTANCE) {
@@ -674,7 +717,7 @@ do { \
                         if (rhs.getIden() == "to_string") {
                             stack.push(stlValue(LIST_TO_STRING));
                             continue;
-                        } else if (rhs.getIden() == "join") { // here
+                        } else if (rhs.getIden() == "join") {
                             stack.push(stlValue(LIST_JOIN));
                             continue;
                         }

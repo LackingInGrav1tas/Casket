@@ -58,7 +58,7 @@ static inline int getPrecedence(TokenType t, std::string s = "") {
 
 static bool invalidIdentifier(std::string id) {
     return id == "set" || id == "fn" || id == "if" || id == "for" || id == "while" ||
-    id == "true" || id == "false" || id == "print" || id == "return" || id == "null" || 
+    id == "true" || id == "false" || id == "return" || id == "null" || 
     id == "label" || id == "else" || id == "class" || id == "inst" || id == "this" || 
     id == "operator";
 }
@@ -616,15 +616,6 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
             op.op = OP_GOTO_LABEL;
             opcode.push_back(op);
             SEMICOLON();
-        } else if (check.value == "print") { // until stl
-            expression(2);
-            PUSH(OP_PRINT_POP);
-            while (lexer.next_token().value != ";") {
-                expression(2);
-                PUSH(OP_PRINT_POP);
-                if (lexer.peek_next_token().value != "," && lexer.peek_next_token().value != ";")
-                    ERROR(lexer.peek_next_token(), "parsing error: expected either ',' or ';'");
-            }
         } else if (check.value == "return") { // until stl
             expression(2);
             SEMICOLON();
