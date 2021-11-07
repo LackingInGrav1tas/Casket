@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <string>
 #include <array>
+#include <sstream>
 
 // #include <Python.h>
 
@@ -558,10 +559,7 @@ do { \
                         if (INSTRUCTION.i != 1) {
                             error("run-time error: list.join expects 1 arguement");
                         }
-                        std::string connector = args[0].toString();
-                        if (args[0].type == STRING) {
-                            connector = connector.substr(1, connector.length()-2);
-                        }
+                        std::string connector = trim(args[0]);
                         Value prim = stack.top();
                         stack.pop();
                         if (prim.getList().size() == 0) {
@@ -658,6 +656,24 @@ do { \
                 result += buffer.data();
             }
             stack.push(strValue(result));
+
+        } else if (OP == OP_STREAM_FILE_READ) {
+            TOP();
+            std::ifstream file(trim(top));
+            std::stringstream file_buffer;
+            file_buffer << file.rdbuf();
+            stack.push(strValue(file_buffer.str()));
+
+        } else if (OP == OP_STREAM_FILE_WRITE) {
+            Value message = stack.top();
+            stack.pop();
+            Value file = stack.top();
+            stack.pop();
+
+            std::ofstream ofile(file.toString());
+            ofile << message.toString();
+            ofile.close();
+
         } else if (OP == OP_PRINT_POP) {
             TOP();
             if (top.type == INSTANCE) {
@@ -679,11 +695,7 @@ do { \
                 }
             }
 
-            std::string s = top.toString();
-            if (top.type == STRING)
-                std::cout << s.substr(1, s.length()-2);
-            else
-                std::cout << s;
+            std::cout << trim(top);
             
         } else if (OP == OP_RETURN_POP) {
             TOP();

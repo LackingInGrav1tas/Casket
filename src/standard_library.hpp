@@ -20,7 +20,7 @@ do { \
     scopes.push_back(std::map<std::string, size_t>());
     templates.push_back(std::map<std::string, ClassTemplate>());
 
-    // STREAM.OUT
+    // STREAM
     {
         Value stream_out;
         stream_out.type = INSTANCE;
@@ -69,11 +69,35 @@ do { \
             }
         ));
 
+        // STREAM.FILE
+        Value stream_file;
+        stream_file.type = INSTANCE;        
+        // STREAM.FILE.READ
+        ADD_FUNCTION(stream_file, "read", {"file"}, (
+            OPS {
+                OpConstant(idenValue("file")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_STREAM_FILE_READ),
+                newOpcode(OP_RETURN_POP),
+            }
+        ));
+        // STREAM.FILE.WRITE
+        ADD_FUNCTION(stream_file, "write", (std::vector<std::string> {"file", "message"}), (
+            OPS {
+                OpConstant(idenValue("file")),
+                newOpcode(OP_GET_VARIABLE),
+                OpConstant(idenValue("message")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_STREAM_FILE_WRITE),
+            }
+        ));
+
         // STREAM
         Value stream;
         stream.type = INSTANCE;
         stream.members["out"] = heap.add(stream_out);
         stream.members["in"] = heap.add(stream_in);
+        stream.members["file"] = heap.add(stream_file);
         scopes[0]["Stream"] = heap.add(stream);
     }
 

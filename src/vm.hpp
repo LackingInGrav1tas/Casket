@@ -111,6 +111,7 @@ struct Machine {
             printOp(OP);
             std::cout << "  --  " << OP.op << std::endl;
         }
+        #undef OP
     }
 
     Value run(int argc, char ** argv);

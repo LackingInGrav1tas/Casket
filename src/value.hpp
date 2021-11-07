@@ -215,4 +215,10 @@ Value funValue(size_t fn) {
     return v;
 }
 
+std::string trim(Value v) {
+    if (v.type == STRING)
+        return v.toString().substr(1, v.toString().length()-2);
+    return v.toString();
+}
+
 #endif

@@ -66,6 +66,8 @@ enum Opcode {
     OP_DEBUG_SCOPES=41,
     OP_ENVIRON_ARGS=42,
     OP_ENVIRON_COMMAND=43,
+    OP_STREAM_FILE_READ=44,
+    OP_STREAM_FILE_WRITE=45,
 };
 
 struct OpcodeObject {
