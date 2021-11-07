@@ -22,11 +22,7 @@ int main(int argc, char ** argv) {
         else if (arg == "d" || arg == "debug")
             flags::debug = true;
         else if (arg == "gc" || arg == "collect")
-            flags::collect = true;
-        else if (arg == "c" || arg == "compile")
-            flags::compile = true;
-        else if (arg == "l" || arg == "load")
-            flags::load = true;
+            flags::collect = false;
     }
 
     heap.init();
