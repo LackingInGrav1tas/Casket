@@ -41,7 +41,7 @@ int main(int argc, char ** argv) {
     vm.init(lexer);
     vm.initialize_standard_library();
     std::cout << "\nPARSING DONE\n" << std::endl;
-    int v = vm.run().getInt();
+    int v = vm.run(argc, argv).getInt();
     std::cout << "\n\nSUCCESS" << std::endl;
     return v;
 }

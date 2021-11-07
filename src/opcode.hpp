@@ -64,6 +64,8 @@ enum Opcode {
 
     OP_PYTHON_RUN=40,
     OP_DEBUG_SCOPES=41,
+    OP_ENVIRON_ARGS=42,
+    OP_ENVIRON_COMMAND=43,
 };
 
 struct OpcodeObject {

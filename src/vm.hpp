@@ -113,7 +113,7 @@ struct Machine {
         }
     }
 
-    Value run();
+    Value run(int argc, char ** argv);
 
 };
 

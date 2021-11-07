@@ -5,10 +5,16 @@
 #include "memory.hpp"
 
 #include <algorithm>
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
 
 // #include <Python.h>
 
-Value Machine::run() {
+Value Machine::run(int argc, char ** argv) {
     // TODO: when a fn returns an object, reset it's box location unless it returns &
     #define POP() if (stack.size() == 0) error("run-time error: stack underflow"); else stack.pop()
     #define TOP() if (stack.size() == 0) error("run-time error: stack underflow"); Value top = stack.top(); POP()
@@ -42,7 +48,7 @@ do { \
                     layer[fn.args[0]] = heap.add(arg); \
                     fn.vm.scopes.push_back(layer); \
                     fn.vm.templates.push_back(std::map<std::string, ClassTemplate>()); \
-                    stack.push(fn.vm.run()); \
+                    stack.push(fn.vm.run(argc, argv)); \
                     continue; \
                 } else { \
                     std::cout << fn.args.size() << std::endl;\
@@ -99,7 +105,7 @@ do { \
                     layer[fn.args[0]] = heap.add(arg); \
                     fn.vm.scopes.push_back(layer); \
                     fn.vm.templates.push_back(std::map<std::string, ClassTemplate>()); \
-                    stack.push(fn.vm.run()); \
+                    stack.push(fn.vm.run(argc, argv)); \
                     continue; \
                 } else { \
                     error("run-time error: expected 1 arguement for " + top.toString() + "'s " + trait + " implementation"); \
@@ -233,7 +239,7 @@ do { \
                             layer[fn.args[0]] = heap.add(arg);
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            stack.push(fn.vm.run());
+                            stack.push(fn.vm.run(argc, argv));
                         } else {
                             error("run-time error: expected 1 arguement for " + top.toString() + "'s % implementation");
                         }
@@ -251,7 +257,7 @@ do { \
                                 layer["this"] = rhs.box_location;
                                 fn.vm.scopes.push_back(layer);
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                                converted = fn.vm.run().getStr();
+                                converted = fn.vm.run(argc, argv).getStr();
                             } else {
                                 error("run-time error: expected 0 arguements for " + rhs.toString() + "'s to_string implementation");
                             }
@@ -280,7 +286,7 @@ do { \
                                 layer["this"] = lhs.box_location;
                                 fn.vm.scopes.push_back(layer);
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                                converted = fn.vm.run().getStr();
+                                converted = fn.vm.run(argc, argv).getStr();
                             } else {
                                 error("run-time error: expected 0 arguements for " + rhs.toString() + "'s to_string implementation");
                             }
@@ -342,7 +348,7 @@ do { \
                                 layer[fn.args[0]] = heap.add(arg);
                                 fn.vm.scopes.push_back(layer);
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                                stack.push(fn.vm.run());
+                                stack.push(fn.vm.run(argc, argv));
                             } else {
                                 error("run-time error: expected 1 arguement for " + top.toString() + "'s / implementation");
                             }
@@ -387,7 +393,7 @@ do { \
                             layer[fn.args[0]] = heap.add(arg);
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            stack.push(fn.vm.run());
+                            stack.push(fn.vm.run(argc, argv));
                         } else {
                             error("run-time error: expected 1 arguement for " + top.toString() + "'s == implementation");
                         }
@@ -444,7 +450,7 @@ do { \
                             layer[fn.args[0]] = heap.add(arg);
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            stack.push(fn.vm.run());
+                            stack.push(fn.vm.run(argc, argv));
                         } else {
                             error("run-time error: expected 1 arguement for " + top.toString() + "'s % implementation");
                         }
@@ -489,7 +495,7 @@ do { \
                             layer["this"] = top.box_location;
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            stack.push(fn.vm.run());
+                            stack.push(fn.vm.run(argc, argv));
                         } else {
                             error("run-time error: expected 0 arguements for " + top.toString() + "'s prefix- implementation");
                         }
@@ -511,7 +517,7 @@ do { \
                             layer["this"] = top.box_location;
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            stack.push(fn.vm.run());
+                            stack.push(fn.vm.run(argc, argv));
                         } else {
                             error("run-time error: expected 0 arguements for " + top.toString() + "'s ! implementation");
                         }
@@ -591,7 +597,7 @@ do { \
                 if (top.home_location != -1) {
                     f.vm.scopes.back()["this"] = top.home_location;
                 }
-                Value return_value = f.vm.run();
+                Value return_value = f.vm.run(argc, argv);
                 return_value.box_location = -1;
                 stack.push(return_value);
                 for (int i = 0; i < scopes.size(); i++) scopes[i] = f.vm.scopes[i];
@@ -633,7 +639,25 @@ do { \
                     std::cout << "[@" << p->second << "] " << p->first << " : " << heap.get(p->second).toString() << std::endl;
                 }
             }
+        } else if (OP == OP_ENVIRON_ARGS) {
+            Value args = listValue({});
+            for (int i = 0; i < argc; i++) {
+                args.list_locations.push_back(heap.add(strValue((std::string)argv[i])));
+            }
+            stack.push(args);
 
+        } else if (OP == OP_ENVIRON_COMMAND) {
+            TOP();
+            std::array<char, 128> buffer;
+            std::string result;
+            std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(top.toString().c_str(), "r"), pclose);
+            if (!pipe) {
+                throw std::runtime_error("Environment.command failed");
+            }
+            while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+                result += buffer.data();
+            }
+            stack.push(strValue(result));
         } else if (OP == OP_PRINT_POP) {
             TOP();
             if (top.type == INSTANCE) {
@@ -646,7 +670,7 @@ do { \
                             layer["this"] = top.box_location;
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            std::cout << fn.vm.run().getStr();
+                            std::cout << fn.vm.run(argc, argv).getStr();
                             continue;
                         } else {
                             error("run-time error: expected 0 arguements for " + top.toString() + "'s to_string implementation");
@@ -753,7 +777,7 @@ do { \
                             layer[fn.args[0]] = heap.add(rhs);
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            stack.push(fn.vm.run());
+                            stack.push(fn.vm.run(argc, argv));
                         } else {
                             error("run-time error: expected 1 arguement for " + lhs.toString() + "'s [ implementation");
                         }
@@ -880,7 +904,7 @@ do { \
                                 layer["this"] = top.box_location;
                                 fn.vm.scopes.push_back(layer);
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                                stack.push(fn.vm.run());
+                                stack.push(fn.vm.run(argc, argv));
                                 break;
                             } else {
                                 error("run-time error: expected 0 arguements for " + top.toString() + "'s ++ implementation");
@@ -953,7 +977,7 @@ do { \
                                 layer["this"] = top.box_location;
                                 fn.vm.scopes.push_back(layer);
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                                stack.push(fn.vm.run());
+                                stack.push(fn.vm.run(argc, argv));
                                 break;
                             } else {
                                 error("run-time error: expected 0 arguements for " + top.toString() + "'s -- implementation");

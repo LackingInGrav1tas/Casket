@@ -20,50 +20,46 @@ do { \
     scopes.push_back(std::map<std::string, size_t>());
     templates.push_back(std::map<std::string, ClassTemplate>());
 
-    // USER.OUT
+    // STREAM.OUT
     {
-        Value user_out;
-        user_out.type = INSTANCE;
+        Value stream_out;
+        stream_out.type = INSTANCE;
         
-        // USER.OUT.PRINT
-        ADD_FUNCTION(user_out, "print", {"message"}, (
+        // STREAM.OUT.PRINT
+        ADD_FUNCTION(stream_out, "print", {"message"}, (
             OPS {
                 OpConstant(idenValue("message")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_PRINT_POP)
             }
         ));
-        // USER.OUT.PRINTLN
-        ADD_FUNCTION(user_out, "println", {"message"}, (
+        // STREAM.OUT.PRINTLN
+        ADD_FUNCTION(stream_out, "println", {"message"}, (
             OPS {
-                newOpcode(OP_BEGIN_SCOPE),
                 OpConstant(idenValue("message")),
                 newOpcode(OP_GET_VARIABLE),
                 OpConstant(strValue("\n")),
                 newOpcode(OP_MODULO),
                 newOpcode(OP_PRINT_POP),
-                newOpcode(OP_END_SCOPE),
             }
         ));
 
 
-        // USER.IN
-        Value user_in;
-        user_in.type = INSTANCE;
-        // USER.IN.READ
-        ADD_FUNCTION(user_in, "read", {"buffer"}, (
+        // STREAM.IN
+        Value stream_in;
+        stream_in.type = INSTANCE;
+        // STREAM.IN.READ
+        ADD_FUNCTION(stream_in, "read", {"buffer"}, (
             OPS {
-                newOpcode(OP_BEGIN_SCOPE),
                 OpConstant(idenValue("buffer")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_DEREFERENCE),
                 newOpcode(OP_INPUT),
                 newOpcode(OP_EDIT_VARIABLE),
-                newOpcode(OP_END_SCOPE),
             }
         ));
-        // USER.IN.INPUT
-        ADD_FUNCTION(user_in, "input", {"message"}, (
+        // STREAM.IN.INPUT
+        ADD_FUNCTION(stream_in, "input", {"message"}, (
             OPS {
                 OpConstant(idenValue("message")),
                 newOpcode(OP_GET_VARIABLE),
@@ -73,12 +69,40 @@ do { \
             }
         ));
 
-        // USER
-        Value user;
-        user.type = INSTANCE;
-        user.members["out"] = heap.add(user_out);
-        user.members["in"] = heap.add(user_in);
-        scopes[0]["User"] = heap.add(user);
+        // STREAM
+        Value stream;
+        stream.type = INSTANCE;
+        stream.members["out"] = heap.add(stream_out);
+        stream.members["in"] = heap.add(stream_in);
+        scopes[0]["Stream"] = heap.add(stream);
+    }
+
+    // ENVIRONMENT
+    {
+        Value environment;
+        environment.type = INSTANCE;
+
+        // ENVIRONMENT.ARGS
+        ADD_FUNCTION(environment, "args", {}, (
+            OPS {
+                newOpcode(OP_ENVIRON_ARGS),
+                newOpcode(OP_RETURN_POP)
+            }
+        ));
+
+#if defined(_WIN32) || defined(_WIN64)
+        // ENVIRONMENT.COMMAND
+        ADD_FUNCTION(environment, "command", {"cmd"}, (
+            OPS {
+                OpConstant(idenValue("cmd")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_ENVIRON_COMMAND),
+                newOpcode(OP_RETURN_POP)
+            }
+        ));
+#endif
+
+        scopes[0]["Environment"] = heap.add(environment);
     }
 
     // DEBUG
