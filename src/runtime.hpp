@@ -670,8 +670,8 @@ do { \
             Value file = stack.top();
             stack.pop();
 
-            std::ofstream ofile(file.toString());
-            ofile << message.toString();
+            std::ofstream ofile(trim(file));
+            ofile << trim(message);
             ofile.close();
 
         } else if (OP == OP_PRINT_POP) {
