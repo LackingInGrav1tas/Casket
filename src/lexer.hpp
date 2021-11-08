@@ -66,6 +66,7 @@ enum TokenType {
     T_IDENTIFIER,
     T_NUMBER,
     T_STRING,
+    T_BYTE,
     
     T_NIL,
     TRUE,
@@ -157,16 +158,30 @@ private:
                 else if (lexeme == "set") ADD_TOKEN(SET);
                 else ADD_TOKEN(T_IDENTIFIER);
             } else if (text::digit(lexeme[0])) { // parse number
-                while (text::digit(SRC)) {
-                    lexeme += _get();
-                }
-                if (SRC == '.') {
-                    lexeme += _get();
+                if (lexeme[0] == '0' && source[0] == 'b') { // byte
+                    _get();
+                    lexeme = "";
+                    int i = 0;
+                    for (; source[0] == '0' || source[0] == '1'; i++) {
+                        lexeme += _get();
+                    }
+                    if (i != 8) {
+                        std::cerr << "lexing error: byte is not 8 bits" << std::endl;
+                        exit(1);
+                    }
+                    ADD_TOKEN(T_BYTE);
+                } else { // number
                     while (text::digit(SRC)) {
                         lexeme += _get();
                     }
+                    if (SRC == '.') {
+                        lexeme += _get();
+                        while (text::digit(SRC)) {
+                            lexeme += _get();
+                        }
+                    }
+                    ADD_TOKEN(T_NUMBER);
                 }
-                ADD_TOKEN(T_NUMBER);
             } else if (lexeme[0] == '"') { // parse string
                 while (true) {
                     if (SRC == '"') {

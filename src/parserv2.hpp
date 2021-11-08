@@ -2,6 +2,7 @@
 #define PARSERV2
 
 #include <functional>
+#include <bitset>
 
 #include "vm.hpp"
 #include "lexer.hpp"
@@ -76,7 +77,7 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
 
     #define SEMICOLON() \
         do { Token semicolon = lexer.next_token(); if (semicolon.type != SEMICOLON) { \
-            ERROR(semicolon, "parsing error: expected a ';'!"); \
+            ERROR(semicolon, "parsing error: expected a ';'"); \
         } } while (0)
     
     #define PUSH(arg) opcode.push_back(newOpcode(arg))
@@ -195,6 +196,9 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                 ERROR(current, "parsing error: expected a valid identifier");
             PUSHC(idenValue(current.value));
             PUSH(OP_GET_VARIABLE);
+        } else if CASE(T_BYTE) {
+            PUSHC( byteValue( std::bitset<8>(current.value).to_ulong() ) );
+
         } else if CASE(T_NUMBER) {
             try {
                 int is_float = false;
