@@ -50,29 +50,4 @@ size_t LevenshteinDistance(const std::string &s1, const std::string &s2)
   return costs[n];
 }
 
-/*
-template <typename T> struct Result {
-    T container;
-    bool ok;
-
-    T unwrap(msg = "unwrap error") {
-        if (result) return container;
-        else error(msg)
-    }
-};
-
-template <typename N> Result<N> Ok(N item) {
-    Result r;
-    r.container = N;
-    ok = true;
-    return r;
-}
-
-template <typename N> Result<N> Err(N item) {
-    Result r;
-    ok = false;
-    return r;
-}
-*/
-
 #endif

@@ -68,7 +68,6 @@ static bool invalidIdentifier(std::string id) {
 
 void Machine::init(Lexer &lexer, bool fn_parsing) {
     ip = 0;
-    // heap.init();
 
     #define NEXT() \
         if (lexer.peek_next_token().type == ERROR) \

@@ -13,10 +13,11 @@
 #define DEBUG(stmt) if (flags::debug) stmt
 
 int main(int argc, char ** argv) {
+
+    // parsing args
     if (argc <= 1) {
         std::cerr << "correct format: " << (std::string)argv[0] << " <file> [warnings] [debug] [collect]" <<std::endl;
     }
-
     for (int i = 2; i < argc; i++) {
         std::string arg = argv[i];
         if (arg == "warn" || arg == "warnings" || arg == "warning" || arg == "w")
@@ -27,6 +28,7 @@ int main(int argc, char ** argv) {
             flags::collect = false;
     }
 
+    // getting source code
     heap.init();
     std::ifstream file(argv[1]);
     std::stringstream buf;
