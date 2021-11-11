@@ -10,6 +10,8 @@
 #include <iostream>
 #include <string.h>
 
+#define DEBUG(stmt) if (flags::debug) stmt
+
 int main(int argc, char ** argv) {
     if (argc <= 1) {
         std::cerr << "correct format: " << (std::string)argv[0] << " <file> [warnings] [debug] [collect]" <<std::endl;
@@ -30,14 +32,14 @@ int main(int argc, char ** argv) {
     std::stringstream buf;
     buf << file.rdbuf();
 
-    Lexer lexer("" + buf.str());
+    Lexer lexer(buf.str());
 
-    std::cout << "\nLEXING DONE" << std::endl;
+    DEBUG(PRINT("\nLEXING DONE"));
     Machine vm;
     vm.init(lexer);
     vm.initialize_standard_library();
-    std::cout << "\nPARSING DONE\n" << std::endl;
+    DEBUG(PRINT("\nPARSING DONE\n"));
     int v = vm.run(argc, argv).getInt();
-    std::cout << "\n\nSUCCESS" << std::endl;
+    DEBUG(PRINT("\n\nSUCCESS"));
     return v;
 }

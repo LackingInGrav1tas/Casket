@@ -27,6 +27,13 @@ enum PrimType {
 enum LibraryCall {
     LIST_TO_STRING,
     LIST_JOIN,
+    LIST_SIZE,
+    LIST_PUSH,
+    LIST_INSERT,
+    LIST_REMOVE,
+    LIST_POP,
+    BYTE_GET_BIT,
+    BYTE_SET_BIT,
 };
 
 struct Value {

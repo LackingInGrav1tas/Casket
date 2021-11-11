@@ -13,8 +13,6 @@
 #include <array>
 #include <sstream>
 
-// #include <Python.h>
-
 Value Machine::run(int argc, char ** argv) {
     // TODO: when a fn returns an object, reset it's box location unless it returns &
     #define POP() if (stack.size() == 0) error("run-time error: stack underflow"); else stack.pop()
@@ -23,6 +21,7 @@ Value Machine::run(int argc, char ** argv) {
     #define INSTRUCTION opcode[ip]
     #define OP INSTRUCTION.op
 
+    // template for math operations
     #define BASIC_OPERATION(operator, trait) \
 do { \
     SIDES(); \
@@ -80,6 +79,8 @@ do { \
         lhs.error("invalid type for operation"); \
     } \
 } while (0)
+
+// used as template for boolean operators
 #define bBASIC_OPERATION(operator, trait) \
 do { \
     SIDES(); \
@@ -139,7 +140,9 @@ do { \
         // printOp(opcode[ip]);
         // std::cout << std::endl;
         // std::cout << "#: " << ip << "  type: " << OP << std::endl;
+
         if (OP == OP_CONSTANT) {
+            // pushes literal value
             stack.push(INSTRUCTION.value);
 
         } else if (OP == OP_SET_VARIABLE) {
@@ -148,10 +151,12 @@ do { \
             TOP();
             scopes.back()[INSTRUCTION.lexeme] = heap.add(top);
         } else if (OP == OP_INPUT) {
+            // standard library: prints, returns input
             std::string buffer;
             std::getline(std::cin, buffer);
             stack.push(strValue(buffer));
         } else if (OP == OP_GET_VARIABLE) {
+            // retrieving value from variable
             TOP();
             bool found = false;
             for (int s = scopes.size()-1; s >= 0; s--) {
@@ -162,7 +167,26 @@ do { \
                     break;
                 }
             }
-            if (!found) top.error("identifier is not in scope");
+            if (!found) {
+                size_t distance = -1;
+                std::string match = "";
+
+                for (int i = 0; i < scopes.size(); i++) {
+                    for (auto it = scopes[i].begin(); it != scopes[i].end(); it++) {
+                        if (distance == -1) {
+                            match = it->first;
+                            distance = LevenshteinDistance(match, top.getIden());
+                        } else {
+                            if (distance > LevenshteinDistance(it->first, top.getIden())) {
+                                match = it->first;
+                                distance = LevenshteinDistance(match, top.getIden());
+                            }
+                        }
+                    }
+                }
+
+                top.error("identifier is not in scope, did you mean \"" + match + "\"?");
+            }
         } else if (OP == OP_EDIT_VARIABLE) {
             // stack order: new value, pointer
             // notation: ptr = new_value
@@ -173,16 +197,6 @@ do { \
             // stack order: identifier
             // notation: &<id-expr>
             TOP();
-            /*bool found = false;
-            for (int s = scopes.size()-1; s >= 0; s--) {
-                auto it = scopes[s].find(top.getIden());
-                if (it != scopes[s].end()) {
-                    found = true;
-                    stack.push(ptrValue(it->second));
-                    break;
-                }
-            }
-            if (!found) top.error("identifier is not in scope");*/
             if (top.box_location == -1) stack.push(ptrValue(heap.add(top))); // boxing object
             else stack.push(ptrValue(top.getBoxLoc()));
         } else if (OP == OP_DEREFERENCE) {
@@ -193,9 +207,12 @@ do { \
 
 
         } else if (OP == OP_BEGIN_SCOPE) {
+            // adds scope to scopes
             scopes.push_back(std::map<std::string, size_t>());
             templates.push_back(std::map<std::string, ClassTemplate>());
+
         } else if (OP == OP_END_SCOPE) {
+            // removes scope + clears memory
             if (scopes.size() == 0) error("run-time error: scope underflow - end_scope");
             auto s = scopes.back();
 
@@ -216,6 +233,7 @@ do { \
             BASIC_OPERATION(*, "*");
             
         } else if (OP == OP_MODULO) {
+            // modulo + string concatenation
             SIDES();
             if (lhs.type == INSTANCE || rhs.type == INSTANCE) {
                 Value top;
@@ -534,10 +552,13 @@ do { \
             stack.push(boolValue( lhs.getBool() || rhs.getBool() ));
 
         } else if (OP == OP_COPY) {
+            // notation: ptr = new_value
+            // sets box location to null, basically making a new copy of a value in memory
             TOP();
             top.box_location = -1;
             stack.push(top);
         } else if (OP == OP_CALL_FN) {
+            // calls function / stl function
             std::vector<Value> args;
             for (int i = 0; i < INSTRUCTION.i; i++) {
                 TOP();
@@ -553,6 +574,15 @@ do { \
                         Value prim = stack.top();
                         stack.pop();
                         stack.push( strValue( prim.toString() ) );
+                        break;
+                    }
+                    case LIST_SIZE: {
+                        if (INSTRUCTION.i != 0) {
+                            error("run-time error: list.size expects 0 arguements");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        stack.push( intValue( prim.getList().size() ) );
                         break;
                     }
                     case LIST_JOIN: {
@@ -578,6 +608,72 @@ do { \
                         }
                         break;
                     }
+                    case LIST_INSERT: {
+                        if (INSTRUCTION.i != 2) {
+                            error("run-time error: list.insert expects 2 arguements");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        prim.getList().insert( prim.getList().begin() + args[0].getInt(), heap.add( args[1] ) );
+                        heap.change(prim.getBoxLoc(), prim);
+                        break;
+                    }
+                    case LIST_REMOVE: {
+                        if (INSTRUCTION.i != 1) {
+                            error("run-time error: list.remove expects 1 arguements");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        prim.getList().erase(prim.getList().begin() + args[0].getInt());
+                        heap.change(prim.getBoxLoc(), prim);
+                        break;
+                    }
+                    case LIST_PUSH: {
+                        if (INSTRUCTION.i != 1) {
+                            error("run-time error: list.push expects 1 arguement");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        prim.getList().push_back(
+                            heap.add( args[0] )
+                        );
+                        heap.change(prim.getBoxLoc(), prim);
+                        break;
+                    }
+                    case LIST_POP: {
+                        if (INSTRUCTION.i != 0) {
+                            error("run-time error: list.pop expects 0 arguements");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        int last = prim.list_locations.back();
+                        prim.list_locations.pop_back();
+                        heap.change(prim.getBoxLoc(), prim);
+                        stack.push(
+                            heap.get(last)
+                        );
+                        break;
+                    }
+                    case BYTE_GET_BIT: {
+                        if (INSTRUCTION.i != 1) {
+                            error("run-time error: byte.get_bit expects 1 arguement");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        stack.push( boolValue(((prim.getByte() >> args[0].getInt())  & 0x01)) );
+                        break;
+                    }
+                    case BYTE_SET_BIT: {
+                        if (INSTRUCTION.i != 2) {
+                            error("run-time error: byte.set_bit expects 2 arguements");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        prim.getByte() ^= (-args[1].getBool() ^ prim.getByte()) & (1UL << args[0].getInt());
+                        heap.change(prim.getBoxLoc(), prim);
+                        break;
+                    }
+                    
                     default: {
                         error("run-time error: stl call does not exist.");
                     }
@@ -601,36 +697,8 @@ do { \
                 for (int i = 0; i < scopes.size(); i++) scopes[i] = f.vm.scopes[i];
             }
 
-        } else if (OP == OP_PYTHON_RUN) {
-            /*TOP();
-            std::string s;
-            if (top.type == INSTANCE) {
-                auto it = top.members.find("to_string");
-                if (it != top.members.end()) {
-                    if (heap.get(it->second).type == FUNCTION) {
-                        auto fn = heap.fn_get(heap.get(it->second).getFun());
-                        if (fn.args.size() == 0) {
-                            Scope layer;
-                            layer["this"] = top.box_location;
-                            fn.vm.scopes.push_back(layer);
-                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            s = fn.vm.run().getStr();
-                            continue;
-                        } else {
-                            error("run-time error: expected 0 arguements for " + top.toString() + "'s to_string implementation");
-                        }
-                    }
-                }
-            } else {
-                s = top.toString();
-            }
-
-            if (top.type == STRING) s = s.substr(1, s.length()-2);
-            
-            Py_Initialize();
-            PyRun_SimpleString(s.c_str());
-            Py_Finalize();*/
         } else if (OP == OP_DEBUG_SCOPES) {
+            // standard library: prints out scopes
             for (int i = 0; i < scopes.size(); i++) {
                 std::cout << "\n ==SCOPE " << i << "== " << std::endl;
                 for (auto p = scopes[i].begin(); p != scopes[i].end(); p++) {
@@ -638,13 +706,46 @@ do { \
                 }
             }
         } else if (OP == OP_ENVIRON_ARGS) {
+            // standard library: returns args
             Value args = listValue({});
             for (int i = 0; i < argc; i++) {
                 args.list_locations.push_back(heap.add(strValue((std::string)argv[i])));
             }
             stack.push(args);
 
+        } else if (OP == OP_STREAM_FILE_READ_BYTE) {
+            // standard library: reads file as list of bytes
+            TOP();
+            std::ifstream file(trim(top));
+            std::stringstream file_buffer;
+            file_buffer << file.rdbuf();
+            Locations locs;
+            for (int i = 0; i < file_buffer.str().length(); i++) {
+                locs.push_back(
+                    heap.add(
+                        byteValue(file_buffer.str()[i])
+                    )
+                );
+            }
+            stack.push(listValue(locs));
+
+
+        } else if (OP == OP_STREAM_FILE_WRITE_BYTE) {
+            // standard library: writes list to file
+            Value message = stack.top();
+            stack.pop();
+            Value file = stack.top();
+            stack.pop();
+
+            std::ofstream ofile(trim(file));
+            Locations list = message.getList();
+            for (int i = 0; i < list.size(); i++) {
+                ofile << trim(heap.get(list[i]));
+            }
+            ofile.close();
+
         } else if (OP == OP_ENVIRON_COMMAND) {
+            // standard library: runs command + returns output
             TOP();
             std::array<char, 128> buffer;
             std::string result;
@@ -658,6 +759,7 @@ do { \
             stack.push(strValue(result));
 
         } else if (OP == OP_STREAM_FILE_READ) {
+            // standard library: read file as string
             TOP();
             std::ifstream file(trim(top));
             std::stringstream file_buffer;
@@ -665,6 +767,7 @@ do { \
             stack.push(strValue(file_buffer.str()));
 
         } else if (OP == OP_STREAM_FILE_WRITE) {
+            // standard library: write string to file
             Value message = stack.top();
             stack.pop();
             Value file = stack.top();
@@ -675,6 +778,7 @@ do { \
             ofile.close();
 
         } else if (OP == OP_PRINT_POP) {
+            // standard library: prints to stdout
             TOP();
             if (top.type == INSTANCE) {
                 auto it = top.members.find("to_string");
@@ -698,10 +802,12 @@ do { \
             std::cout << trim(top);
             
         } else if (OP == OP_RETURN_POP) {
+            // returns
             TOP();
             return top;
         }
 
+        // control flow
         else if (OP == OP_JUMP) {
             ip += INSTRUCTION.i;
         } else if (OP == OP_JUMP_FALSE) {
@@ -709,11 +815,10 @@ do { \
             if (!top.getBool()) {
                 ip += INSTRUCTION.i;
             }
-        } else if (OP == OP_ERROR) {
-            error("OP_ERROR found.");
         }
 
         else if (OP == OP_GOTO_LABEL) {
+            // goto in language
             for (int i = 0; ; i++) {
                 if (i >= opcode.size()) {
                     error("run-time error: couldn't find the label" + INSTRUCTION.lexeme);
@@ -728,12 +833,14 @@ do { \
         }
 
         else if (OP == OP_GET_MEMBER) {
+            // get field
             SIDES();
             if (lhs.members.find(rhs.getIden()) != lhs.members.end())
                 stack.push(heap.get(lhs.members[rhs.getIden()]));
             else do {
+                // allows primitive types member functions
                 stack.push(lhs);
-                switch (lhs.type) { // STL stuff
+                switch (lhs.type) {
                     case INTIGER: {
 
                     }
@@ -747,7 +854,13 @@ do { \
 
                     }
                     case BYTE: {
-
+                        if (rhs.getIden() == "get_bit") {
+                            stack.push(stlValue(BYTE_GET_BIT));
+                            continue;
+                        } else if (rhs.getIden() == "set_bit") {
+                            stack.push(stlValue(BYTE_SET_BIT));
+                            continue;
+                        }
                     }
                     case LIST: {
                         if (rhs.getIden() == "to_string") {
@@ -755,6 +868,21 @@ do { \
                             continue;
                         } else if (rhs.getIden() == "join") {
                             stack.push(stlValue(LIST_JOIN));
+                            continue;
+                        } else if (rhs.getIden() == "insert") {
+                            stack.push(stlValue(LIST_INSERT));
+                            continue;
+                        } else if (rhs.getIden() == "remove") {
+                            stack.push(stlValue(LIST_REMOVE));
+                            continue;
+                        } else if (rhs.getIden() == "size") {
+                            stack.push(stlValue(LIST_SIZE));
+                            continue;
+                        } else if (rhs.getIden() == "push") {
+                            stack.push(stlValue(LIST_PUSH));
+                            continue;
+                        } else if (rhs.getIden() == "pop") {
+                            stack.push(stlValue(LIST_POP));
                             continue;
                         }
                     }
@@ -772,6 +900,7 @@ do { \
         }
 
         else if (OP == OP_INDEX) {
+            // standard library: indexes object, xyz[]
             SIDES();
             if (lhs.type == STRING) {
                 if (lhs.getStr().length() <= rhs.getInt()) error("run-time error: index " + std::to_string(rhs.getInt()) + " out of range.");
@@ -803,6 +932,7 @@ do { \
         }
 
         else if (OP == OP_DECL_CLASS) {
+            // creates a class
             ClassTemplate t;
             for (int i = 0; i < opcode[ip].i; i++) {
                 auto value = stack.top();
@@ -816,6 +946,7 @@ do { \
         }
 
         else if (OP == OP_CREATE_INST) {
+            // creates an instance of a class, new Class(a = b...)
             ClassTemplate templt;
             bool found = false;
             for (int s = templates.size()-1; s >= 0; s--) {
@@ -843,6 +974,7 @@ do { \
 
             stack.push(instanceValue(templt));
         } else if (OP == OP_CREATE_LIST) {
+            // creates a list, allows for literal
             Locations list;
             std::vector<Value> values;
             for (int i = 0; i < opcode[ip].i; i++) {
@@ -856,6 +988,7 @@ do { \
             stack.push(listValue(list));
 
         } else if (OP == OP_INCREMENT) {
+            // increments, ++
             TOP();
             switch (top.type) {
                 case INTIGER: {
@@ -929,6 +1062,7 @@ do { \
                 }
             }
         } else if (OP == OP_DECREMENT) {
+            // decrements, --
             TOP();
             switch (top.type) {
                 case INTIGER: {

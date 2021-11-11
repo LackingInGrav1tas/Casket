@@ -81,6 +81,15 @@ do { \
                 newOpcode(OP_RETURN_POP),
             }
         ));
+        // STREAM.FILE.READ_BYTES
+        ADD_FUNCTION(stream_file, "read_bytes", {"file"}, (
+            OPS {
+                OpConstant(idenValue("file")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_STREAM_FILE_READ_BYTE),
+                newOpcode(OP_RETURN_POP),
+            }
+        ));
         // STREAM.FILE.WRITE
         ADD_FUNCTION(stream_file, "write", (std::vector<std::string> {"file", "message"}), (
             OPS {
@@ -89,6 +98,16 @@ do { \
                 OpConstant(idenValue("message")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_STREAM_FILE_WRITE),
+            }
+        ));
+        // STREAM.FILE.WRITE
+        ADD_FUNCTION(stream_file, "write_bytes", (std::vector<std::string> {"file", "message"}), (
+            OPS {
+                OpConstant(idenValue("file")),
+                newOpcode(OP_GET_VARIABLE),
+                OpConstant(idenValue("message")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_STREAM_FILE_WRITE_BYTE),
             }
         ));
 
@@ -110,6 +129,14 @@ do { \
         ADD_FUNCTION(environment, "args", {}, (
             OPS {
                 newOpcode(OP_ENVIRON_ARGS),
+                newOpcode(OP_RETURN_POP)
+            }
+        ));
+
+        // ENVIRONMENT.ARGS
+        ADD_FUNCTION(environment, "cwd", {}, (
+            OPS {
+                newOpcode(OP_ENVIRON_CWD),
                 newOpcode(OP_RETURN_POP)
             }
         ));

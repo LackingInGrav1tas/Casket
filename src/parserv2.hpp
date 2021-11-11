@@ -13,10 +13,12 @@
 int indent = 0;
 
 void print_debug(std::string s) {
-    for (int _ = 0; _ < indent; _++) {
-        std::cout << "    ";
+    if (flags::debug) {
+        for (int _ = 0; _ < indent; _++) {
+            std::cout << "    ";
+        }
+        std::cout << s << std::endl;
     }
-    std::cout << s << std::endl;
 }
 
 static int gp(TokenType t, std::string s = "") {
@@ -95,7 +97,7 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                 lexer.error(lexer.peek_next_token(), "parsing error: expected a ')'");
             }
             lexer.next_token();
-        } else if (current.type == INST) { // until stl
+        } else if (current.type == INST) {
             NEXT();
             if (current.type != T_IDENTIFIER || invalidIdentifier(current.value))
                 ERROR(current, "parsing error: expected a valid class name");
@@ -620,7 +622,7 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
             op.op = OP_GOTO_LABEL;
             opcode.push_back(op);
             SEMICOLON();
-        } else if (check.value == "return") { // until stl
+        } else if (check.value == "return") {
             expression(2);
             SEMICOLON();
             PUSH(OP_RETURN_POP);
