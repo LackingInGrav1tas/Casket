@@ -250,22 +250,22 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                 // std::cout << "PUSH" << std::endl;
                 PUSH(OP_GET_MEMBER);
                 // std::cout << "past" << std::endl;
-            } else if (current.value == "&") {
-                if (lexer.peek_next_token().value == "&") {
-                    lexer.next_token();
-                    expression(2);
-                    PUSH(OP_AND);
-                } else {
-                    ERROR(lexer.peek_next_token(), "parsing error: expected a ';D'");
-                }
-            } else if (current.value == "|") {
-                if (lexer.peek_next_token().value == "|") {
-                    lexer.next_token();
-                    expression(1);
-                    PUSH(OP_OR);
-                } else {
-                    ERROR(lexer.peek_next_token(), "parsing error: expected a ';('");
-                }
+            } else if (current.type == AND) {
+                expression(2);
+                PUSH(OP_AND);
+
+            } else if (current.type == OR) {
+                expression(1);
+                PUSH(OP_OR);
+
+            } else if (current.type == BIT_AND) {
+                expression(2);
+                PUSH(OP_AND);
+
+            } else if (current.type == BIT_OR) {
+                expression(1);
+                PUSH(OP_OR);                
+
             } else {
                 switch (current.type) {
                     case PLUS: {

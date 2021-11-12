@@ -533,6 +533,12 @@ do { \
         } else if (OP == OP_OR) {
             SIDES();
             stack.push(boolValue( lhs.getBool() || rhs.getBool() ));
+        } else if (OP == OP_BIT_AND) {
+            SIDES();
+            stack.push(boolValue( lhs.getByte() & rhs.getByte() ));
+        } else if (OP == OP_BIT_OR) {
+            SIDES();
+            stack.push(boolValue( lhs.getByte() | rhs.getByte() ));
         } else if (OP == OP_INCREMENT) {
             // increments, ++
             TOP();

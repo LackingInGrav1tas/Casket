@@ -114,8 +114,8 @@ do { \
         // STREAM
         Value stream;
         stream.type = INSTANCE;
-        stream.members["out"] = heap.add(stream_out);
-        stream.members["in"] = heap.add(stream_in);
+        stream.members["in"]   = heap.add(stream_in);
+        stream.members["out"]  = heap.add(stream_out);
         stream.members["file"] = heap.add(stream_file);
         scopes[0]["Stream"] = heap.add(stream);
     }
@@ -141,7 +141,6 @@ do { \
             }
         ));
 
-#if defined(_WIN32) || defined(_WIN64)
         // ENVIRONMENT.COMMAND
         ADD_FUNCTION(environment, "command", {"cmd"}, (
             OPS {
@@ -151,7 +150,6 @@ do { \
                 newOpcode(OP_RETURN_POP)
             }
         ));
-#endif
 
         scopes[0]["Environment"] = heap.add(environment);
     }

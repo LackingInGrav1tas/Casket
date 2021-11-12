@@ -70,6 +70,9 @@ enum Opcode {
     OP_ENVIRON_CWD=46,
     OP_STREAM_FILE_READ_BYTE=47,
     OP_STREAM_FILE_WRITE_BYTE=48,
+
+    OP_BIT_AND=49,
+    OP_BIT_OR=50,
 };
 
 struct OpcodeObject {

@@ -21,9 +21,9 @@ Bytecode interpreter written in C++. Slow and inefficient, made for fun.
 <literal> ::= STRING | NUMBER | "true" | "false" | "null" | <anon-function> | <instance-creation> ;
 
 <prefix> ::= ( "!" | "-" | "&" | "*" | ":" ) <expression> ;
-<infix> ::= <expression> ( "+" | "-" | "*" | "/" | "%" | "=" | ">" | "<" | "==" | ">=" | "<=" | "&&" | "||" ) <expression> ;
+<infix> ::= <expression> ( "+" | "-" | "*" | "/" | "%" | "=" | ">" | "<" | "==" | ">=" | "<=" | "&&" | "||" | "|" | "&" | "^" ) <expression> ;
 <anon-function> ::= "fn" "(" [ IDENTIFIER [ "," IDENTIFIER ]* ] ")" "{" <declaration>* "}" ;
-<instance-creation> ::= "inst" IDENTIFIER "(" [ IDENTIFIER "=" <expression> [ "," IDENTIFIER "=" <expression> ] ] ")" ;
+<instance-creation> ::= "new" IDENTIFIER "(" [ IDENTIFIER "=" <expression> [ "," IDENTIFIER "=" <expression> ] ] ")" ;
 
 ```
 
@@ -35,6 +35,8 @@ intiger: ```1```, ```2```, ```3```, etc.
 
 float: ```1.0```, ```1.1```, etc.
 
+byte: ```0b01010101```, etc.
+
 str: ```"..."```
 
 boolean: ```true```, ```false```
@@ -44,7 +46,7 @@ list: ```[...]```
 
 function: ```fn(...) {...}```
 
-instance: ```inst ClassName(field=..., ...)```
+instance: ```new ClassName(field=value, ...)```
 
 ## Example Code ##
 
@@ -61,7 +63,7 @@ class Example {
     };
 }
 
-print inst Example(msg="Hello") + ", World!";
+Stream.out.print(new Example(msg="Hello") + ", World!");
 ```
 
 Class functions are fed one (or two) variables automatically:
@@ -104,3 +106,56 @@ print a;
 ```
 2
 ```
+
+## Standard Library ##
+
+### Stream ###
+
+
+Handles input/output
+
+
+#### in ####
+
+```Stream.in.input(message)```: prints ```message```, returns input
+
+```Stream.in.read(buffer)```: reads input to ```buffer```. ```buffer``` should be a pointer to a string variable.
+
+
+#### out ####
+
+```Stream.out.print(message)```: prints ```message``` to standard output
+
+```Stream.out.println(message)```: prints ```message``` and flushes
+
+
+#### file ####
+
+```Stream.file.read(filename)```: reads and returns file at path ```filename```.
+
+```Stream.file.write(filename, data)```: writes ```data``` to file at ```filename```.
+
+```Stream.file.read_bytes(filename)```: reads and returns file at path ```filename``` as a list of bytes.
+
+```Stream.file.write_bytes(filename, data)```: writes ```data```, which should be a list, to file at ```filename```.
+
+
+
+### Environment ###
+
+Interfaces with OS
+
+
+```Environment.args()```: returns arguements given to program as list of strings
+
+```Environment.command(cmd)```: runs ```cmd``` and returns it's output
+
+
+
+
+### Debug ###
+
+Gives information about the virtual machine
+
+
+```Debug.print_scopes()```: prints scopes
