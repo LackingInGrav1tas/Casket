@@ -274,9 +274,9 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                         break;
                     }
                     case PLUS_PLUS: {
-                        lexer.next_token();
+                        // lexer.next_token();
                         PUSH(OP_INCREMENT);
-                        break;
+                        return;
                     }
                     case MINUS: {
                         expression(getPrecedence(MINUS));
@@ -284,9 +284,9 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                         break;
                     }
                     case MINUS_MINUS: {
-                        lexer.next_token();
+                        // lexer.next_token();
                         PUSH(OP_DECREMENT);
-                        break;
+                        return;
                     }
                     case STAR: {
                         expression(getPrecedence(STAR));
