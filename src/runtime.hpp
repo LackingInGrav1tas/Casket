@@ -532,13 +532,20 @@ do { \
             stack.push(boolValue( lhs.getBool() && rhs.getBool() ));
         } else if (OP == OP_OR) {
             SIDES();
-            stack.push(boolValue( lhs.getBool() || rhs.getBool() ));
+            stack.push(byteValue( lhs.getBool() || rhs.getBool() ));
         } else if (OP == OP_BIT_AND) {
             SIDES();
-            stack.push(boolValue( lhs.getByte() & rhs.getByte() ));
+            stack.push(byteValue( lhs.getByte() & rhs.getByte() ));
         } else if (OP == OP_BIT_OR) {
             SIDES();
-            stack.push(boolValue( lhs.getByte() | rhs.getByte() ));
+            stack.push(byteValue( lhs.getByte() | rhs.getByte() ));
+        } else if (OP == OP_XOR) {
+            SIDES();
+            if (lhs.type == BOOLEAN) {
+                stack.push(boolValue( lhs.getBool() & rhs.getBool() ));
+            } else {
+                stack.push(byteValue( lhs.getByte() ^ rhs.getByte() ));
+            }
         } else if (OP == OP_INCREMENT) {
             // increments, ++
             TOP();
@@ -1069,6 +1076,15 @@ do { \
                 result += buffer.data();
             }
             stack.push(strValue(result));
+        
+        } else if (OP == OP_ENVIRON_CASKET) {
+            // standard library: calls native code
+            TOP();
+            Lexer lexer(trim(top));
+            Machine vm;
+            vm.init(lexer);
+            vm.initialize_standard_library();
+            stack.push(vm.run(argc, argv));
 
         } else if (OP == OP_STREAM_FILE_READ) {
             // standard library: read file as string

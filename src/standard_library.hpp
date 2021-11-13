@@ -133,10 +133,20 @@ do { \
             }
         ));
 
-        // ENVIRONMENT.ARGS
+        // ENVIRONMENT.CWD
         ADD_FUNCTION(environment, "cwd", {}, (
             OPS {
                 newOpcode(OP_ENVIRON_CWD),
+                newOpcode(OP_RETURN_POP)
+            }
+        ));
+
+        // ENVIRONMENT.CASKET
+        ADD_FUNCTION(environment, "casket", {"code"}, (
+            OPS {
+                OpConstant(idenValue("code")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_ENVIRON_CASKET),
                 newOpcode(OP_RETURN_POP)
             }
         ));

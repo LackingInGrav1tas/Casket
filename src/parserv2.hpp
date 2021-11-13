@@ -44,6 +44,8 @@ static int gp(TokenType t, std::string s = "") {
         case STAR          : return 7;
         case PERCENT       : return 7;
         case CARROT        : return 7;
+        case BIT_AND       : return 7;
+        case BIT_OR        : return 7;
         case PLUS_PLUS     : return 8;
         case MINUS_MINUS   : return 8;
         case LEFT_PAREN    : return 9;
@@ -274,7 +276,6 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                         break;
                     }
                     case PLUS_PLUS: {
-                        // lexer.next_token();
                         PUSH(OP_INCREMENT);
                         return;
                     }
@@ -284,7 +285,6 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                         break;
                     }
                     case MINUS_MINUS: {
-                        // lexer.next_token();
                         PUSH(OP_DECREMENT);
                         return;
                     }
@@ -296,6 +296,11 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                     case SLASH: {
                         expression(getPrecedence(SLASH));
                         PUSH(OP_DIVIDE);
+                        break;
+                    }
+                    case CARROT: {
+                        expression(getPrecedence(CARROT));
+                        PUSH(OP_XOR);
                         break;
                     }
                     case PERCENT: {

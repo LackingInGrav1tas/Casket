@@ -73,6 +73,9 @@ enum Opcode {
 
     OP_BIT_AND=49,
     OP_BIT_OR=50,
+    OP_XOR=51,
+
+    OP_ENVIRON_CASKET=52,
 };
 
 struct OpcodeObject {
