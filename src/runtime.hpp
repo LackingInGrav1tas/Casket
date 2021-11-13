@@ -755,6 +755,15 @@ do { \
 
                     }
                     case STRING: {
+                        if (rhs.getIden() == "length") {
+                            stack.push(stlValue(STRING_LENGTH));
+                            continue;
+                        } else if (rhs.getIden() == "substring") {
+                            stack.push(stlValue(STRING_SUBSTRING));
+                            continue;
+                        } else {
+                            error("the only member functions string supports are: length, substring");
+                        }
 
                     }
                     case BOOLEAN: {
@@ -767,6 +776,8 @@ do { \
                         } else if (rhs.getIden() == "set_bit") {
                             stack.push(stlValue(BYTE_SET_BIT));
                             continue;
+                        } else {
+                            error("the only member functions byte supports are: get_bit, set_bit");
                         }
                     }
                     case LIST: {
@@ -791,6 +802,8 @@ do { \
                         } else if (rhs.getIden() == "pop") {
                             stack.push(stlValue(LIST_POP));
                             continue;
+                        } else {
+                            error("the only member functions list supports are: to_string, join, insert, remove, size, push, pop");
                         }
                     }
                 }
@@ -834,6 +847,24 @@ do { \
             TOP();
             if (top.type == STL_CALL) {
                 switch (top.getSTL()) { // prim stlcall [args] OP_CALL
+                    case STRING_LENGTH: {
+                        if (INSTRUCTION.i != 0) {
+                            error("run-time error: string.length expects 0 arguements");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        stack.push( intValue( prim.getStr().length() ) );
+                        break;
+                    }
+                    case STRING_SUBSTRING: {
+                        if (INSTRUCTION.i != 2) {
+                            error("run-time error: string.substring expects 2 arguements");
+                        }
+                        Value prim = stack.top();
+                        stack.pop();
+                        stack.push( strValue( prim.getStr().substr(args[0].getInt(), args[1].getInt()) ) );
+                        break;
+                    }
                     case LIST_TO_STRING: {
                         if (INSTRUCTION.i != 0) {
                             error("run-time error: list.to_string expects 0 arguements");
@@ -1076,6 +1107,11 @@ do { \
                 result += buffer.data();
             }
             stack.push(strValue(result));
+
+        } else if (OP == OP_ENVIRON_EXIT) {
+            // standard library: exits program
+            TOP();
+            return top;
         
         } else if (OP == OP_ENVIRON_CASKET) {
             // standard library: calls native code

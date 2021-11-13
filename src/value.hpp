@@ -25,6 +25,8 @@ enum PrimType {
 };
 
 enum LibraryCall {
+    STRING_LENGTH,
+    STRING_SUBSTRING,
     LIST_TO_STRING,
     LIST_JOIN,
     LIST_SIZE,

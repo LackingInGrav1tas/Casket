@@ -76,6 +76,7 @@ enum Opcode {
     OP_XOR=51,
 
     OP_ENVIRON_CASKET=52,
+    OP_ENVIRON_EXIT=53,
 };
 
 struct OpcodeObject {

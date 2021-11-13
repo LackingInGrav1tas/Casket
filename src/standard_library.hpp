@@ -133,11 +133,28 @@ do { \
             }
         ));
 
+        // ENVIRONMENT.ARGS
+        ADD_FUNCTION(environment, "exit", {"val"}, (
+            OPS {
+                OpConstant(idenValue("val")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_ENVIRON_EXIT),
+            }
+        ));
+
         // ENVIRONMENT.CWD
         ADD_FUNCTION(environment, "cwd", {}, (
             OPS {
-                newOpcode(OP_ENVIRON_CWD),
+#if defined(_WIN32) || defined(_WIN64)
+                OpConstant(strValue("cd")),
+                newOpcode(OP_ENVIRON_COMMAND),
                 newOpcode(OP_RETURN_POP)
+#else
+                OpConstant(strValue("Environment.cwd() is only supported with Windows")),
+                newOpcode(OP_PRINT_POP),
+                OpConstant(intValue(1)),
+                newOpcode(OP_ENVIRON_EXIT),
+#endif
             }
         ));
 
