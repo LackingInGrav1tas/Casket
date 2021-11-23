@@ -57,17 +57,17 @@ do { \
             } \
         } \
         lhs.error("invalid type for operation"); \
-    } else if (lhs.type == FLOAT) { \
-        if (rhs.type == FLOAT) { \
-            stack.push(floatValue( lhs.getFloat() operator rhs.getFloat() )); \
+    } else if (lhs.type == DOUBLE) { \
+        if (rhs.type == DOUBLE) { \
+            stack.push(doubleValue( lhs.getDouble() operator rhs.getDouble() )); \
         } else if (rhs.type == INTIGER) { \
-            stack.push(floatValue( lhs.getFloat() operator rhs.getInt() )); \
+            stack.push(doubleValue( lhs.getDouble() operator rhs.getInt() )); \
         } else { \
             rhs.error("invalid type for operation"); \
         } \
     } else if (lhs.type == INTIGER) { \
-        if (rhs.type == FLOAT) { \
-            stack.push(floatValue( lhs.getInt() operator rhs.getFloat() )); \
+        if (rhs.type == DOUBLE) { \
+            stack.push(doubleValue( lhs.getInt() operator rhs.getDouble() )); \
         } else if (rhs.type == INTIGER) { \
             stack.push(intValue( lhs.getInt() operator rhs.getInt() )); \
         } else { \
@@ -115,17 +115,17 @@ do { \
             } \
         } \
         lhs.error("invalid type for operation"); \
-    } else if (lhs.type == FLOAT) { \
-        if (rhs.type == FLOAT) { \
-            stack.push(boolValue( lhs.getFloat() operator rhs.getFloat() )); \
+    } else if (lhs.type == DOUBLE) { \
+        if (rhs.type == DOUBLE) { \
+            stack.push(boolValue( lhs.getDouble() operator rhs.getDouble() )); \
         } else if (rhs.type == INTIGER) { \
-            stack.push(boolValue( lhs.getFloat() operator rhs.getInt() )); \
+            stack.push(boolValue( lhs.getDouble() operator rhs.getInt() )); \
         } else { \
             rhs.error("invalid type for operation"); \
         } \
     } else if (lhs.type == INTIGER) { \
-        if (rhs.type == FLOAT) { \
-            stack.push(boolValue( lhs.getInt() operator rhs.getFloat() )); \
+        if (rhs.type == DOUBLE) { \
+            stack.push(boolValue( lhs.getInt() operator rhs.getDouble() )); \
         } else if (rhs.type == INTIGER) { \
             stack.push(boolValue( lhs.getInt() operator rhs.getInt() )); \
         } else { \
@@ -309,23 +309,23 @@ do { \
                 stack.push(intValue(lhs.getInt() % rhs.getInt()));
         } else if (OP == OP_DIVIDE) {
             SIDES();
-            if (lhs.type == FLOAT && ( rhs.type == FLOAT || rhs.type == INTIGER )) {
-                if (rhs.type == FLOAT) {
-                    if (rhs.getFloat() == 0) rhs.error("division by zero");
-                    stack.push(floatValue( lhs.getFloat() / rhs.getFloat() ));
+            if (lhs.type == DOUBLE && ( rhs.type == DOUBLE || rhs.type == INTIGER )) {
+                if (rhs.type == DOUBLE) {
+                    if (rhs.getDouble() == 0) rhs.error("division by zero");
+                    stack.push(doubleValue( lhs.getDouble() / rhs.getDouble() ));
                 } else if (rhs.type == INTIGER) {
                     if (rhs.getInt() == 0) rhs.error("division by zero");
-                    stack.push(floatValue( lhs.getFloat() / rhs.getInt() ));
+                    stack.push(doubleValue( lhs.getDouble() / rhs.getInt() ));
                 } else {
                     rhs.error("invalid type for operation"); 
                 }
-            } else if (lhs.type == INTIGER && ( rhs.type == FLOAT || rhs.type == INTIGER )) {
-                if (rhs.type == FLOAT) {
-                    if (rhs.getFloat() == 0) rhs.error("division by zero");
-                    stack.push(floatValue( lhs.getInt() / rhs.getFloat() ));
+            } else if (lhs.type == INTIGER && ( rhs.type == DOUBLE || rhs.type == INTIGER )) {
+                if (rhs.type == DOUBLE) {
+                    if (rhs.getDouble() == 0) rhs.error("division by zero");
+                    stack.push(doubleValue( lhs.getInt() / rhs.getDouble() ));
                 } else if (rhs.type == INTIGER) {
                     if (rhs.getInt() == 0) rhs.error("division by zero");
-                    stack.push(floatValue( lhs.getInt() / rhs.getInt() ));
+                    stack.push(intValue( lhs.getInt() / rhs.getInt() ));
                 } else {
                     rhs.error("invalid type for operation"); 
                 }
@@ -411,9 +411,9 @@ do { \
                         if (rhs.type != INTIGER) stack.push(boolValue(false));
                         else stack.push(boolValue(lhs.getInt() == rhs.getInt()));
                         break;
-                    case FLOAT:
-                        if (rhs.type != FLOAT) stack.push(boolValue(false));
-                        else stack.push(boolValue(lhs.getFloat() == rhs.getInt()));
+                    case DOUBLE:
+                        if (rhs.type != DOUBLE) stack.push(boolValue(false));
+                        else stack.push(boolValue(lhs.getDouble() == rhs.getInt()));
                         break;
                     case BOOLEAN:
                         if (rhs.type != BOOLEAN) stack.push(boolValue(false));
@@ -468,9 +468,9 @@ do { \
                         if (rhs.type != INTIGER) stack.push(boolValue(true));
                         else stack.push(boolValue(lhs.getInt() != rhs.getInt()));
                         break;
-                    case FLOAT:
-                        if (rhs.type != FLOAT) stack.push(boolValue(true));
-                        else stack.push(boolValue(lhs.getFloat() != rhs.getInt()));
+                    case DOUBLE:
+                        if (rhs.type != DOUBLE) stack.push(boolValue(true));
+                        else stack.push(boolValue(lhs.getDouble() != rhs.getInt()));
                         break;
                     case BOOLEAN:
                         if (rhs.type != BOOLEAN) stack.push(boolValue(true));
@@ -505,7 +505,7 @@ do { \
                 } else top.error("invalid type for operation");
             }
             else if (top.type == INTIGER) stack.push(intValue(-top.getInt()));
-            else if (top.type == FLOAT) stack.push(floatValue(-top.getFloat()));
+            else if (top.type == DOUBLE) stack.push(doubleValue(-top.getDouble()));
             else top.error("invalid type for operation");
         } else if (OP == OP_NOT) {
             TOP();
@@ -532,7 +532,7 @@ do { \
             stack.push(boolValue( lhs.getBool() && rhs.getBool() ));
         } else if (OP == OP_OR) {
             SIDES();
-            stack.push(byteValue( lhs.getBool() || rhs.getBool() ));
+            stack.push(boolValue( lhs.getBool() || rhs.getBool() ));
         } else if (OP == OP_BIT_AND) {
             SIDES();
             stack.push(byteValue( lhs.getByte() & rhs.getByte() ));
@@ -566,19 +566,19 @@ do { \
                     }
                     break;
                 }
-                case FLOAT: {
+                case DOUBLE: {
                     if (top.box_location != -1) {
                         heap.change(
                             top.box_location,
-                            floatValue(
+                            doubleValue(
                                 heap.get(
                                     top.box_location
-                                ).getFloat()+1
+                                ).getDouble()+1
                             )
                         );
                         stack.push(heap.get(top.box_location));
                     } else {
-                        stack.push(floatValue(top.getFloat() + 1));
+                        stack.push(doubleValue(top.getDouble() + 1));
                     }
                     break;
                 }
@@ -640,19 +640,19 @@ do { \
                     }
                     break;
                 }
-                case FLOAT: {
+                case DOUBLE: {
                     if (top.box_location != -1) {
                         heap.change(
                             top.box_location,
-                            floatValue(
+                            doubleValue(
                                 heap.get(
                                     top.box_location
-                                ).getFloat()-1
+                                ).getDouble()-1
                             )
                         );
                         stack.push(heap.get(top.box_location));
                     } else {
-                        stack.push(floatValue(top.getFloat() - 1));
+                        stack.push(doubleValue(top.getDouble() - 1));
                     }
                     break;
                 }
@@ -751,7 +751,7 @@ do { \
                     case INTIGER: {
 
                     }
-                    case FLOAT: {
+                    case DOUBLE: {
 
                     }
                     case STRING: {
@@ -762,7 +762,7 @@ do { \
                             stack.push(stlValue(STRING_SUBSTRING));
                             continue;
                         } else {
-                            error("the only member functions string supports are: length, substring");
+                            error("the only member functions string supports are: length, substring; not " + rhs.getIden());
                         }
 
                     }
@@ -777,7 +777,7 @@ do { \
                             stack.push(stlValue(BYTE_SET_BIT));
                             continue;
                         } else {
-                            error("the only member functions byte supports are: get_bit, set_bit");
+                            error("the only member functions byte supports are: get_bit, set_bit; not " + rhs.getIden());
                         }
                     }
                     case LIST: {
@@ -803,7 +803,7 @@ do { \
                             stack.push(stlValue(LIST_POP));
                             continue;
                         } else {
-                            error("the only member functions list supports are: to_string, join, insert, remove, size, push, pop");
+                            error("the only member functions list supports are: to_string, join, insert, remove, size, push, pop; not " + rhs.getIden());
                         }
                     }
                 }
@@ -1004,11 +1004,22 @@ do { \
         // control flow
         else if (OP == OP_JUMP) {
             ip += INSTRUCTION.i;
+        } else if (OP == OP_JUMP_LOOP) {
+            ip += INSTRUCTION.i;
         } else if (OP == OP_JUMP_FALSE) {
             TOP();
             if (!top.getBool()) {
                 ip += INSTRUCTION.i;
             }
+        }
+
+        else if (OP == OP_BREAK) {
+            int position = ip;
+            for (; OP != OP_JUMP_LOOP; ip++)
+                if (ip >= opcode.size()) {
+                    error("run-time error: misplaced break");
+                }
+            ip++;
         }
 
         else if (OP == OP_GOTO_LABEL) {
@@ -1055,6 +1066,20 @@ do { \
                     std::cout << "[@" << p->second << "] " << p->first << " : " << heap.get(p->second).toString() << std::endl;
                 }
             }
+        } else if (OP == OP_TYPES_IS) {
+            // standard library: returns true if value is type
+            Value type = stack.top();
+            stack.pop();
+            Value val = stack.top();
+            stack.pop();
+
+            stack.push(boolValue(val.type == type.getInt()));
+            
+        } else if (OP == OP_TYPES_GET_TYPE) {
+            // standard library: returns value type
+            TOP();
+            stack.push(intValue(top.type));
+
         } else if (OP == OP_ENVIRON_ARGS) {
             // standard library: returns args
             Value args = listValue({});

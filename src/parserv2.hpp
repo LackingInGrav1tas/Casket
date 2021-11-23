@@ -211,7 +211,7 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                         break;
                     }
                 }
-                if (is_float) PUSHC(floatValue(std::stof(current.value)));
+                if (is_float) PUSHC(doubleValue(std::stod(current.value)));
                 else {
                     if (lexer.peek_next_token().value == "byte") { // remove when as conversion implemented
                         lexer.next_token();
@@ -435,8 +435,8 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
 
             declaration();
 
-            //std::cout << "\nvalue = " << lexer.last_token().value << std::endl;
-            if (lexer.last_token().value == "else") {
+            // std::cout << "\nvalue = " << lexer.peek_next_token().value << std::endl;
+            if (lexer.peek_next_token().value == "else") {
                 lexer.next_token();
                 PUSH(OP_ERROR);
                 int elsesize = opcode.size();
@@ -468,7 +468,7 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
             
             declaration();
 
-            opcode.push_back(jumpOpcode(OP_JUMP, at_condition_size-opcode.size()-1));
+            opcode.push_back(jumpOpcode(OP_JUMP_LOOP, at_condition_size-opcode.size()-1));
             
             opcode[size] = jumpOpcode(OP_JUMP_FALSE, opcode.size()-size-1);
 
@@ -501,12 +501,56 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
                 opcode.erase(opcode.begin()+iter_pre_size);
             }
 
-            opcode.push_back(jumpOpcode(OP_JUMP, at_condition_size-opcode.size()-1));
+            opcode.push_back(jumpOpcode(OP_JUMP_LOOP, at_condition_size-opcode.size()-1));
             
             opcode[size] = jumpOpcode(OP_JUMP_FALSE, opcode.size()-size-1);
 
             PUSH(OP_END_SCOPE);
 
+        } else if (check.type == ENUM) {
+            NEXT();
+            if (current.type != T_IDENTIFIER || invalidIdentifier(current.value)) {
+                ERROR(current, "parsing error: expected a valid identifier");
+            }
+            std::string name = current.value;
+            if (lexer.next_token().type != LEFT_BRACKET) {
+                ERROR(lexer.peek_next_token(), "parsing error: expected a valid identifier")
+            }
+
+            int i = 0;
+            while (1) {
+                if (lexer.peek_next_token().type == RIGHT_BRACKET) {
+                    break;
+                } else {
+                    i++;
+                    Token tname = lexer.next_token();
+
+                    if (tname.type != T_IDENTIFIER || invalidIdentifier(tname.value)) {
+                        ERROR(tname, "parsing error: expected an identifier");
+                    } else {
+                        print_debug("method(" + tname.value + ")");
+                        PUSHC(idenValue(tname.value));
+                    }
+                    NEXT();
+                    if CASE(COLON) {
+                        expression(1);
+                        NEXT();
+                        if (current.value == ";") {
+                            // nada
+                        } else if CASE(RIGHT_PAREN) {
+                            break;
+                        }
+                    } else if (current.value != ";") {
+                        ERROR(current, "parsing error: expected either ';' or ':'");
+                    } else {
+                        PUSHC(nullValue());
+                    }
+                }
+            }
+
+            // opcode.push_back(DeclEnumOpcode(name, i));
+
+            lexer.next_token();
         } else if (check.value == "class") {
             NEXT();
             if (current.type != T_IDENTIFIER || invalidIdentifier(current.value)) {
@@ -625,6 +669,9 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
             op.lexeme = id;
             op.op = OP_GOTO_LABEL;
             opcode.push_back(op);
+            SEMICOLON();
+        } else if (check.value == "break") {
+            PUSH(OP_BREAK);
             SEMICOLON();
         } else if (check.value == "return") {
             expression(2);

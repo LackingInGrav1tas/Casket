@@ -143,12 +143,12 @@ do { \
         ));
 
         // ENVIRONMENT.CWD
-        ADD_FUNCTION(environment, "cwd", {}, (
+        ADD_FUNCTION(environment, "cwd", (std::vector<std::string>{}), (
             OPS {
 #if defined(_WIN32) || defined(_WIN64)
                 OpConstant(strValue("cd")),
                 newOpcode(OP_ENVIRON_COMMAND),
-                newOpcode(OP_RETURN_POP)
+                newOpcode(OP_RETURN_POP),
 #else
                 OpConstant(strValue("Environment.cwd() is only supported with Windows")),
                 newOpcode(OP_PRINT_POP),
@@ -197,6 +197,52 @@ do { \
         // not implemented
 
         scopes[0]["Debug"] = heap.add(debug);
+    }
+
+    // TYPES - enum
+    {
+        Value types;
+        types.type = INSTANCE;
+
+        Value prims;
+        prims.type = INSTANCE;
+
+        // setting prim types
+        prims.members["INT"] = heap.add(intValue(INTIGER));
+        prims.members["DOUBLE"] = heap.add(intValue(DOUBLE));
+        prims.members["STRING"] = heap.add(intValue(STRING));
+        prims.members["BOOLEAN"] = heap.add(intValue(BOOLEAN));
+        prims.members["NULL"] = heap.add(intValue(NIL));
+        prims.members["BYTE"] = heap.add(intValue(BYTE));
+        prims.members["POINTER"] = heap.add(intValue(POINTER));
+        prims.members["LIST"] = heap.add(intValue(LIST));
+        prims.members["FUNCTION"] = heap.add(intValue(FUNCTION));
+        prims.members["INSTANCE"] = heap.add(intValue(INSTANCE));
+
+        // TYPES.IS
+        ADD_FUNCTION(types, "is", (std::vector<std::string>{"val", "prim"}), (
+            OPS {
+                OpConstant(idenValue("val")),
+                newOpcode(OP_GET_VARIABLE),
+                OpConstant(idenValue("prim")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_TYPES_IS),
+                newOpcode(OP_RETURN_POP),
+            }
+        ));
+
+        // TYPES.GET_TYPE
+        ADD_FUNCTION(types, "get_type", {"val"}, (
+            OPS {
+                OpConstant(idenValue("val")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_TYPES_GET_TYPE),
+                newOpcode(OP_RETURN_POP),
+            }
+        ));
+
+        types.members["prims"] = heap.add(prims);
+        scopes[0]["Types"] = heap.add(types);
     }
 }
 

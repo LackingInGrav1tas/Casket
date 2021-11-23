@@ -10,7 +10,7 @@ typedef std::vector<size_t> Locations;
 
 enum PrimType {
     INTIGER,
-    FLOAT,
+    DOUBLE,
     STRING,
     BOOLEAN,
     NIL,
@@ -18,9 +18,9 @@ enum PrimType {
     POINTER,
     LIST,
     FUNCTION,
-    IDENTIFIER,
     INSTANCE,
 
+    IDENTIFIER,
     STL_CALL,
 };
 
@@ -42,7 +42,7 @@ struct Value {
     union {
         LibraryCall stl_call;
         int intiger;
-        float floating;
+        double doublev;
         bool boolean;
         size_t pointer;
         unsigned char byte;
@@ -62,7 +62,7 @@ struct Value {
     }
 
     inline void error(std::string msg, int code = 1) {
-        std::cerr << "run-time error: " << msg << "  object: " << toString() << std::endl;
+        std::cerr << "run-time error: " << msg << "  object: <" << toString() << ">  type: " << type << std::endl;
         exit(code);
     }
 
@@ -70,8 +70,8 @@ struct Value {
         if (type == INTIGER) return intiger;
         else error("expected an int");
     }
-    inline float &getFloat() {
-        if (type == FLOAT) return floating;
+    inline double &getDouble() {
+        if (type == DOUBLE) return doublev;
         else error("expected a float");
     }
     inline bool &getBool() {
@@ -135,11 +135,11 @@ Value intValue(int i) {
     return v;
 }
 
-Value floatValue(float f) {
+Value doubleValue(double f) {
     Value v;
-    v.type = FLOAT;
+    v.type = DOUBLE;
     v.box_location = -1;
-    v.getFloat() = f;
+    v.getDouble() = f;
     v.home_location = -1;
     return v;
 }

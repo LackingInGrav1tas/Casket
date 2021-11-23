@@ -77,6 +77,7 @@ enum TokenType {
     CLASS,
     FN,
     INST,
+    ENUM,
 
 
     ERROR
@@ -156,6 +157,7 @@ private:
                 else if (lexeme == "fn") ADD_TOKEN(FN);
                 else if (lexeme == "new") ADD_TOKEN(INST);
                 else if (lexeme == "set") ADD_TOKEN(SET);
+                else if (lexeme == "enum") ADD_TOKEN(ENUM);
                 else ADD_TOKEN(T_IDENTIFIER);
             } else if (text::digit(lexeme[0])) { // parse number
                 if (lexeme[0] == '0' && source[0] == 'b') { // byte

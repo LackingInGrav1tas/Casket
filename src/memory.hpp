@@ -107,8 +107,8 @@ std::string Value::toString() {
     switch (type) {
         case INTIGER:
             return std::to_string(intiger);
-        case FLOAT:
-            return std::to_string(floating);
+        case DOUBLE:
+            return std::to_string(doublev);
         case BOOLEAN:
             return std::to_string(boolean);
         case NIL:
