@@ -45,6 +45,7 @@ enum Opcode {
     OP_JUMP_LOOP,
     OP_JUMP,
     OP_BREAK,
+    OP_CONTINUE,
 
     OP_RETURN_POP,
     OP_PRINT_POP,

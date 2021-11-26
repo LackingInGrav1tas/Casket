@@ -1020,6 +1020,13 @@ do { \
                     error("run-time error: misplaced break");
                 }
             ip++;
+        } else if (OP == OP_CONTINUE) {
+            int position = ip;
+            for (; OP != OP_JUMP_LOOP; ip++)
+                if (ip >= opcode.size()) {
+                    error("run-time error: misplaced continue");
+                }
+            ip--;
         }
 
         else if (OP == OP_GOTO_LABEL) {

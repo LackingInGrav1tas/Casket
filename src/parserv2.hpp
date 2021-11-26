@@ -673,6 +673,9 @@ void Machine::init(Lexer &lexer, bool fn_parsing) {
         } else if (check.value == "break") {
             PUSH(OP_BREAK);
             SEMICOLON();
+        } else if (check.value == "continue") {
+            PUSH(OP_BREAK);
+            SEMICOLON();
         } else if (check.value == "return") {
             expression(2);
             SEMICOLON();
