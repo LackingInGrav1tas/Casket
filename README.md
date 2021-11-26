@@ -18,7 +18,7 @@ Bytecode interpreter written in C++. Slow and inefficient, made for fun.
 <flexible-block> ::= ( "{" <declaration>* "}" ) | <declaration> ;
 <operation> ::= <prefix> | <infix> | ( <expression> "(" [ <expression> [ "," <expression> ]* ] ) ;
 <group> ::= "(" <expression> ")" ;
-<literal> ::= STRING | NUMBER | "true" | "false" | "null" | <anon-function> | <instance-creation> ;
+<literal> ::= STRING | NUMBER | LIST | "true" | "false" | "null" | <anon-function> | <instance-creation> ;
 
 <prefix> ::= ( "!" | "-" | "&" | "*" | ":" ) <expression> ;
 <infix> ::= <expression> ( "+" | "-" | "*" | "/" | "%" | "=" | ">" | "<" | "==" | ">=" | "<=" | "&&" | "||" | "|" | "&" | "^" ) <expression> ;
@@ -150,6 +150,10 @@ Interfaces with OS
 
 ```Environment.command(cmd)```: runs ```cmd``` and returns it's output
 
+```Environment.exit(val)```: exits program, returning ```val```
+
+```Environment.casket(code)```: runs ```code```, a string, as if it were Casket code
+
 
 
 
@@ -159,3 +163,47 @@ Gives information about the virtual machine
 
 
 ```Debug.print_scopes()```: prints scopes
+
+
+
+
+### Types ###
+
+Gives information about a value's type
+
+
+```Types.prims```: Enum containing ```INT```, ```DOUBLE```, ```STRING```, ```BOOLEAN```, ```NULL```, ```BYTE```, ```POINTER```, ```LIST```, ```FUNCTION```, ```INSTANCE```
+
+
+```Types.is(val, prim)```: returns true if ```val```'s type is ```prim```.
+
+```Types.get_type(val)```: returns a ```Types.prims``` of ```val```'s type
+
+
+## Example Programs ##
+
+
+
+### Hello World ###
+
+```Stream.out.print("Hello, World");```
+
+
+
+### Stream Cipher: ###
+```
+set argv = Environment.args();
+set pfile = argv[2];
+set kfile = argv[3];
+set ofile = argv[4];
+
+set pdata = Stream.file.read_bytes(pfile);
+set kdata = Stream.file.read_bytes(kfile);
+
+set cdata = [];
+for (set i = 0; i < pdata.size(); i++) {
+    cdata.push(pdata[i] ^ kdata[i]);
+}
+
+Stream.file.write_bytes(ofile, cdata);
+```

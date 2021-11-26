@@ -542,7 +542,7 @@ do { \
         } else if (OP == OP_XOR) {
             SIDES();
             if (lhs.type == BOOLEAN) {
-                stack.push(boolValue( lhs.getBool() & rhs.getBool() ));
+                stack.push(boolValue( lhs.getBool() ^ rhs.getBool() ));
             } else {
                 stack.push(byteValue( lhs.getByte() ^ rhs.getByte() ));
             }
