@@ -190,7 +190,7 @@ Gives information about a value's type
 
 
 
-### Stream Cipher: ###
+### Stream Cipher ###
 ```
 set argv = Environment.args();
 set pfile = argv[2];
