@@ -72,7 +72,7 @@ struct Value {
     }
     inline double &getDouble() {
         if (type == DOUBLE) return doublev;
-        else error("expected a float");
+        else error("expected a double");
     }
     inline bool &getBool() {
         if (type == BOOLEAN) return boolean;

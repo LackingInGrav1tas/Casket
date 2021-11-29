@@ -184,6 +184,11 @@ private:
                     }
                     ADD_TOKEN(T_NUMBER);
                 }
+            } else if (lexeme[0] == '/') { // comments
+                if (SRC == '/') {
+                    char c = _get();
+                    while (c != '\n') c = _get();
+                }
             } else if (lexeme[0] == '"') { // parse string
                 while (true) {
                     if (SRC == '"') {

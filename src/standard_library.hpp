@@ -26,17 +26,17 @@ do { \
         stream_out.type = INSTANCE;
         
         // STREAM.OUT.PRINT
-        ADD_FUNCTION(stream_out, "print", {"message"}, (
+        ADD_FUNCTION(stream_out, "print", {"$message"}, (
             OPS {
-                OpConstant(idenValue("message")),
+                OpConstant(idenValue("$message")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_PRINT_POP)
             }
         ));
         // STREAM.OUT.PRINTLN
-        ADD_FUNCTION(stream_out, "println", {"message"}, (
+        ADD_FUNCTION(stream_out, "println", {"$message"}, (
             OPS {
-                OpConstant(idenValue("message")),
+                OpConstant(idenValue("$message")),
                 newOpcode(OP_GET_VARIABLE),
                 OpConstant(strValue("\n")),
                 newOpcode(OP_MODULO),
@@ -49,9 +49,9 @@ do { \
         Value stream_in;
         stream_in.type = INSTANCE;
         // STREAM.IN.READ
-        ADD_FUNCTION(stream_in, "read", {"buffer"}, (
+        ADD_FUNCTION(stream_in, "read", {"$buffer"}, (
             OPS {
-                OpConstant(idenValue("buffer")),
+                OpConstant(idenValue("$buffer")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_DEREFERENCE),
                 newOpcode(OP_INPUT),
@@ -59,9 +59,9 @@ do { \
             }
         ));
         // STREAM.IN.INPUT
-        ADD_FUNCTION(stream_in, "input", {"message"}, (
+        ADD_FUNCTION(stream_in, "input", {"$message"}, (
             OPS {
-                OpConstant(idenValue("message")),
+                OpConstant(idenValue("$message")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_PRINT_POP),
                 newOpcode(OP_INPUT),
@@ -73,39 +73,39 @@ do { \
         Value stream_file;
         stream_file.type = INSTANCE;        
         // STREAM.FILE.READ
-        ADD_FUNCTION(stream_file, "read", {"file"}, (
+        ADD_FUNCTION(stream_file, "read", {"$file"}, (
             OPS {
-                OpConstant(idenValue("file")),
+                OpConstant(idenValue("$file")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_STREAM_FILE_READ),
                 newOpcode(OP_RETURN_POP),
             }
         ));
         // STREAM.FILE.READ_BYTES
-        ADD_FUNCTION(stream_file, "read_bytes", {"file"}, (
+        ADD_FUNCTION(stream_file, "read_bytes", {"$file"}, (
             OPS {
-                OpConstant(idenValue("file")),
+                OpConstant(idenValue("$file")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_STREAM_FILE_READ_BYTE),
                 newOpcode(OP_RETURN_POP),
             }
         ));
         // STREAM.FILE.WRITE
-        ADD_FUNCTION(stream_file, "write", (std::vector<std::string> {"file", "message"}), (
+        ADD_FUNCTION(stream_file, "write", (std::vector<std::string> {"$file", "$message"}), (
             OPS {
-                OpConstant(idenValue("file")),
+                OpConstant(idenValue("$file")),
                 newOpcode(OP_GET_VARIABLE),
-                OpConstant(idenValue("message")),
+                OpConstant(idenValue("$message")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_STREAM_FILE_WRITE),
             }
         ));
         // STREAM.FILE.WRITE
-        ADD_FUNCTION(stream_file, "write_bytes", (std::vector<std::string> {"file", "message"}), (
+        ADD_FUNCTION(stream_file, "write_bytes", (std::vector<std::string> {"$file", "$message"}), (
             OPS {
-                OpConstant(idenValue("file")),
+                OpConstant(idenValue("$file")),
                 newOpcode(OP_GET_VARIABLE),
-                OpConstant(idenValue("message")),
+                OpConstant(idenValue("$message")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_STREAM_FILE_WRITE_BYTE),
             }
@@ -134,9 +134,9 @@ do { \
         ));
 
         // ENVIRONMENT.ARGS
-        ADD_FUNCTION(environment, "exit", {"val"}, (
+        ADD_FUNCTION(environment, "exit", {"$val"}, (
             OPS {
-                OpConstant(idenValue("val")),
+                OpConstant(idenValue("$val")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_ENVIRON_EXIT),
             }
@@ -159,9 +159,9 @@ do { \
         ));
 
         // ENVIRONMENT.CASKET
-        ADD_FUNCTION(environment, "casket", {"code"}, (
+        ADD_FUNCTION(environment, "casket", {"$code"}, (
             OPS {
-                OpConstant(idenValue("code")),
+                OpConstant(idenValue("$code")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_ENVIRON_CASKET),
                 newOpcode(OP_RETURN_POP)
@@ -169,9 +169,9 @@ do { \
         ));
 
         // ENVIRONMENT.COMMAND
-        ADD_FUNCTION(environment, "command", {"cmd"}, (
+        ADD_FUNCTION(environment, "command", {"$cmd"}, (
             OPS {
-                OpConstant(idenValue("cmd")),
+                OpConstant(idenValue("$cmd")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_ENVIRON_COMMAND),
                 newOpcode(OP_RETURN_POP)
@@ -220,11 +220,11 @@ do { \
         prims.members["INSTANCE"] = heap.add(intValue(INSTANCE));
 
         // TYPES.IS
-        ADD_FUNCTION(types, "is", (std::vector<std::string>{"val", "prim"}), (
+        ADD_FUNCTION(types, "is", (std::vector<std::string>{"$val", "$prim"}), (
             OPS {
-                OpConstant(idenValue("val")),
+                OpConstant(idenValue("$val")),
                 newOpcode(OP_GET_VARIABLE),
-                OpConstant(idenValue("prim")),
+                OpConstant(idenValue("$prim")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_TYPES_IS),
                 newOpcode(OP_RETURN_POP),
@@ -232,11 +232,23 @@ do { \
         ));
 
         // TYPES.GET_TYPE
-        ADD_FUNCTION(types, "get_type", {"val"}, (
+        ADD_FUNCTION(types, "get_type", {"$val"}, (
             OPS {
-                OpConstant(idenValue("val")),
+                OpConstant(idenValue("$val")),
                 newOpcode(OP_GET_VARIABLE),
                 newOpcode(OP_TYPES_GET_TYPE),
+                newOpcode(OP_RETURN_POP),
+            }
+        ));
+
+        // TYPES.TO
+        ADD_FUNCTION(types, "to", (std::vector<std::string>{"$val", "$type"}), (
+            OPS {
+                OpConstant(idenValue("$val")),
+                newOpcode(OP_GET_VARIABLE),
+                OpConstant(idenValue("$type")),
+                newOpcode(OP_GET_VARIABLE),
+                newOpcode(OP_TYPES_TO),
                 newOpcode(OP_RETURN_POP),
             }
         ));

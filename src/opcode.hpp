@@ -83,6 +83,7 @@ enum Opcode {
 
     OP_TYPES_IS,
     OP_TYPES_GET_TYPE,
+    OP_TYPES_TO,
 };
 
 struct OpcodeObject {

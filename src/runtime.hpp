@@ -1081,7 +1081,118 @@ do { \
             stack.pop();
 
             stack.push(boolValue(val.type == type.getInt()));
-            
+        
+        } else if (OP == OP_TYPES_TO) {
+            // standard library: returns true if value is type
+            Value type = stack.top();
+            stack.pop();
+            Value val = stack.top();
+            stack.pop();
+
+            switch (val.type) {
+                case INTIGER: {
+                    switch (type.getInt()) {
+                        case BYTE: {
+                            stack.push(byteValue(val.getInt()));
+                            break;
+                        }
+                        case DOUBLE: {
+                            stack.push(doubleValue(val.getInt()));
+                            break;
+                        }
+                        case STRING: {
+                            stack.push(strValue(std::to_string(val.getInt())));
+                            break;
+                        }
+                        default: error("run-time error: byte objects cannot be converted to anything other than int, double, string");
+                    }
+                    break;
+                }
+                case DOUBLE: {
+                    switch (type.getInt()) {
+                        case INTIGER: {
+                            stack.push(intValue(val.getDouble()));
+                            break;
+                        }
+                        case STRING: {
+                            stack.push(strValue(std::to_string(val.getDouble())));
+                            break;
+                        }
+                        case BYTE: {
+                            stack.push(byteValue(val.getDouble()));
+                            break;
+                        }
+                        default: error("run-time error: double objects cannot be converted to anything other than int, string, byte");
+                    }
+                    break;
+                }
+                case STRING: {
+                    switch (type.getInt()) {
+                        case INTIGER: {
+                            stack.push(intValue(std::stoi(val.getStr())));
+                            break;
+                        }
+                        case DOUBLE: {
+                            stack.push(doubleValue(std::stod(val.getStr())));
+                            break;
+                        }
+                        default: error("run-time error: string objects cannot be converted to anything other than int, double");
+                    }
+                    break;
+                }
+                case BOOLEAN: {
+                    switch (type.getInt()) {
+                        case INTIGER: {
+                            stack.push(intValue(val.getBool()));
+                            break;
+                        }
+                        case DOUBLE: {
+                            stack.push(doubleValue(val.getBool()));
+                            break;
+                        }
+                        default: error("run-time error: bool objects cannot be converted to anything other than int, double");
+                    }
+                    break;
+                }
+                case NIL: {
+                    error("run-time error: null cannot be converted");
+                }
+                case BYTE: {
+                    switch (type.getInt()) {
+                        case INTIGER: {
+                            stack.push(intValue(val.getByte()));
+                            break;
+                        }
+                        case DOUBLE: {
+                            stack.push(doubleValue(val.getByte()));
+                            break;
+                        }
+                        case STRING: {
+                            stack.push(strValue(std::string(1, (char)val.getByte())));
+                            break;
+                        }
+                        default: error("run-time error: byte objects cannot be converted to anything other than int, double, string");
+                    }
+                    break;
+                }
+                case POINTER: {
+                    if (type.getInt() == INTIGER) {
+                        stack.push(intValue(val.getPtr()));
+                    } else error("run-time error: pointer objects cannot be converted to anything other than int");
+                    break;
+                }
+                case LIST: {
+                    error("run-time error: list objects cannot be converted");
+                }
+                case FUNCTION: {
+                    error("run-time error: function objects cannot be converted");
+                }
+                case INSTANCE: {
+                    error("run-time error: instance objects cannot be converted");
+                }
+                default: error("run-time error: type does not exist.");
+            }
+
         } else if (OP == OP_TYPES_GET_TYPE) {
             // standard library: returns value type
             TOP();
