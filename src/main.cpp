@@ -13,7 +13,6 @@
 #define DEBUG(stmt) if (flags::debug) stmt
 
 int main(int argc, char ** argv) {
-
     // parsing args
     if (argc <= 1) {
         std::cerr << "correct format: " << (std::string)argv[0] << " <file> [warnings] [debug] [collect]" <<std::endl;
@@ -34,7 +33,7 @@ int main(int argc, char ** argv) {
     std::stringstream buf;
     buf << file.rdbuf();
 
-    Lexer lexer(buf.str());
+    Lexer lexer(buf.str() + "\n;\"\";");
 
     DEBUG(PRINT("\nLEXING DONE"));
     Machine vm;

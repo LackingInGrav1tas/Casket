@@ -187,8 +187,9 @@ private:
             } else if (lexeme[0] == '/') { // comments
                 if (SRC == '/') {
                     char c = _get();
-                    while (c != '\n') c = _get();
+                    while (source.size() != 0 && c != '\n') c = _get();
                 }
+                return next_token();
             } else if (lexeme[0] == '"') { // parse string
                 while (true) {
                     if (SRC == '"') {
