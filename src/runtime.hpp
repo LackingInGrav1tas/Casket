@@ -60,15 +60,15 @@ do { \
     } else if (lhs.type == DOUBLE) { \
         if (rhs.type == DOUBLE) { \
             stack.push(doubleValue( lhs.getDouble() operator rhs.getDouble() )); \
-        } else if (rhs.type == INTIGER) { \
+        } else if (rhs.type == INTEGER) { \
             stack.push(doubleValue( lhs.getDouble() operator rhs.getInt() )); \
         } else { \
             rhs.error("invalid type for operation"); \
         } \
-    } else if (lhs.type == INTIGER) { \
+    } else if (lhs.type == INTEGER) { \
         if (rhs.type == DOUBLE) { \
             stack.push(doubleValue( lhs.getInt() operator rhs.getDouble() )); \
-        } else if (rhs.type == INTIGER) { \
+        } else if (rhs.type == INTEGER) { \
             stack.push(intValue( lhs.getInt() operator rhs.getInt() )); \
         } else { \
             rhs.error("invalid type for operation"); \
@@ -118,15 +118,15 @@ do { \
     } else if (lhs.type == DOUBLE) { \
         if (rhs.type == DOUBLE) { \
             stack.push(boolValue( lhs.getDouble() operator rhs.getDouble() )); \
-        } else if (rhs.type == INTIGER) { \
+        } else if (rhs.type == INTEGER) { \
             stack.push(boolValue( lhs.getDouble() operator rhs.getInt() )); \
         } else { \
             rhs.error("invalid type for operation"); \
         } \
-    } else if (lhs.type == INTIGER) { \
+    } else if (lhs.type == INTEGER) { \
         if (rhs.type == DOUBLE) { \
             stack.push(boolValue( lhs.getInt() operator rhs.getDouble() )); \
-        } else if (rhs.type == INTIGER) { \
+        } else if (rhs.type == INTEGER) { \
             stack.push(boolValue( lhs.getInt() operator rhs.getInt() )); \
         } else { \
             rhs.error("invalid type for operation"); \
@@ -246,84 +246,33 @@ do { \
                             error("run-time error: expected 1 arguement for " + top.toString() + "'s % implementation");
                         }
                     }
-                } else lhs.error("invalid type for operation");
-            } else if (lhs.type == STRING) {
-                std::string converted;
-                if (rhs.type == INSTANCE) {
-                    auto it = rhs.members.find("to_string");
-                    if (it != rhs.members.end()) {
-                        if (heap.get(it->second).type == FUNCTION) {
-                            auto fn = heap.fn_get(heap.get(it->second).getFun());
-                            if (fn.args.size() == 0) {
-                                Scope layer;
-                                layer["this"] = rhs.box_location;
-                                fn.vm.scopes.push_back(layer);
-                                fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                                converted = fn.vm.run(argc, argv).getStr();
-                            } else {
-                                error("run-time error: expected 0 arguements for " + rhs.toString() + "'s to_string implementation");
-                            }
-                        } else {
-                            error("run-time error: invalid type for operation  object: " + rhs.toString());
-                        }
-                    } else {
-                        error("run-time error: invalid type for operation  object: " + rhs.toString());
-                    }
+                } else if (lhs.type == STRING || rhs.type == STRING) {
+                    stack.push(strValue(trim(lhs) + trim(rhs)));
                 } else {
-                    converted = rhs.toString();
-                    if (converted.at(0) == '"') {
-                        converted = rhs.str;
-                    }
+                    stack.push(intValue(lhs.getInt() % rhs.getInt()));
                 }
-                stack.push(strValue(lhs.getStr() + converted));
-            } else if (rhs.type == STRING) {
-                std::string converted;
-                if (lhs.type == INSTANCE) {
-                    auto it = lhs.members.find("to_string");
-                    if (it != lhs.members.end()) {
-                        if (heap.get(it->second).type == FUNCTION) {
-                            auto fn = heap.fn_get(heap.get(it->second).getFun());
-                            if (fn.args.size() == 0) {
-                                Scope layer;
-                                layer["this"] = lhs.box_location;
-                                fn.vm.scopes.push_back(layer);
-                                fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                                converted = fn.vm.run(argc, argv).getStr();
-                            } else {
-                                error("run-time error: expected 0 arguements for " + rhs.toString() + "'s to_string implementation");
-                            }
-                        } else {
-                            error("run-time error: invalid type for operation  object: " + lhs.toString());
-                        }
-                    } else {
-                        error("run-time error: invalid type for operation  object: " + lhs.toString());
-                    }
-                } else {
-                    converted = lhs.toString();
-                    if (converted.at(0) == '"') {
-                        converted = lhs.str;
-                    }
-                }
-                stack.push(strValue(converted + rhs.getStr()));
-            } else 
+            } else if (lhs.type == STRING || rhs.type == STRING) {
+                stack.push(strValue(trim(lhs) + trim(rhs)));
+            } else {
                 stack.push(intValue(lhs.getInt() % rhs.getInt()));
+            }
         } else if (OP == OP_DIVIDE) {
             SIDES();
-            if (lhs.type == DOUBLE && ( rhs.type == DOUBLE || rhs.type == INTIGER )) {
+            if (lhs.type == DOUBLE && ( rhs.type == DOUBLE || rhs.type == INTEGER )) {
                 if (rhs.type == DOUBLE) {
                     if (rhs.getDouble() == 0) rhs.error("division by zero");
                     stack.push(doubleValue( lhs.getDouble() / rhs.getDouble() ));
-                } else if (rhs.type == INTIGER) {
+                } else if (rhs.type == INTEGER) {
                     if (rhs.getInt() == 0) rhs.error("division by zero");
                     stack.push(doubleValue( lhs.getDouble() / rhs.getInt() ));
                 } else {
                     rhs.error("invalid type for operation"); 
                 }
-            } else if (lhs.type == INTIGER && ( rhs.type == DOUBLE || rhs.type == INTIGER )) {
+            } else if (lhs.type == INTEGER && ( rhs.type == DOUBLE || rhs.type == INTEGER )) {
                 if (rhs.type == DOUBLE) {
                     if (rhs.getDouble() == 0) rhs.error("division by zero");
                     stack.push(doubleValue( lhs.getInt() / rhs.getDouble() ));
-                } else if (rhs.type == INTIGER) {
+                } else if (rhs.type == INTEGER) {
                     if (rhs.getInt() == 0) rhs.error("division by zero");
                     stack.push(intValue( lhs.getInt() / rhs.getInt() ));
                 } else {
@@ -407,8 +356,8 @@ do { \
                         if (rhs.type != STRING) stack.push(boolValue(false));
                         else stack.push(boolValue(lhs.getStr() == rhs.getStr()));
                         break;
-                    case INTIGER:
-                        if (rhs.type != INTIGER) stack.push(boolValue(false));
+                    case INTEGER:
+                        if (rhs.type != INTEGER) stack.push(boolValue(false));
                         else stack.push(boolValue(lhs.getInt() == rhs.getInt()));
                         break;
                     case DOUBLE:
@@ -464,8 +413,8 @@ do { \
                         if (rhs.type != STRING) stack.push(boolValue(true));
                         else stack.push(boolValue(lhs.getStr() != rhs.getStr()));
                         break;
-                    case INTIGER:
-                        if (rhs.type != INTIGER) stack.push(boolValue(true));
+                    case INTEGER:
+                        if (rhs.type != INTEGER) stack.push(boolValue(true));
                         else stack.push(boolValue(lhs.getInt() != rhs.getInt()));
                         break;
                     case DOUBLE:
@@ -504,9 +453,9 @@ do { \
                     }
                 } else top.error("invalid type for operation");
             }
-            else if (top.type == INTIGER) stack.push(intValue(-top.getInt()));
+            else if (top.type == INTEGER) stack.push(intValue(-top.getInt()));
             else if (top.type == DOUBLE) stack.push(doubleValue(-top.getDouble()));
-            else top.error("invalid type for operation");
+            else top.error("invalid type for operationn");
         } else if (OP == OP_NOT) {
             TOP();
             if (top.type == INSTANCE) {
@@ -550,7 +499,7 @@ do { \
             // increments, ++
             TOP();
             switch (top.type) {
-                case INTIGER: {
+                case INTEGER: {
                     if (top.box_location != -1) {
                         heap.change(
                             top.box_location,
@@ -624,7 +573,7 @@ do { \
             // decrements, --
             TOP();
             switch (top.type) {
-                case INTIGER: {
+                case INTEGER: {
                     if (top.box_location != -1) {
                         heap.change(
                             top.box_location,
@@ -748,7 +697,7 @@ do { \
                 // allows primitive types member functions
                 stack.push(lhs);
                 switch (lhs.type) {
-                    case INTIGER: {
+                    case INTEGER: {
 
                     }
                     case DOUBLE: {
@@ -1090,7 +1039,7 @@ do { \
             stack.pop();
 
             switch (val.type) {
-                case INTIGER: {
+                case INTEGER: {
                     switch (type.getInt()) {
                         case BYTE: {
                             stack.push(byteValue(val.getInt()));
@@ -1110,7 +1059,7 @@ do { \
                 }
                 case DOUBLE: {
                     switch (type.getInt()) {
-                        case INTIGER: {
+                        case INTEGER: {
                             stack.push(intValue(val.getDouble()));
                             break;
                         }
@@ -1128,7 +1077,7 @@ do { \
                 }
                 case STRING: {
                     switch (type.getInt()) {
-                        case INTIGER: {
+                        case INTEGER: {
                             stack.push(intValue(std::stoi(val.getStr())));
                             break;
                         }
@@ -1142,7 +1091,7 @@ do { \
                 }
                 case BOOLEAN: {
                     switch (type.getInt()) {
-                        case INTIGER: {
+                        case INTEGER: {
                             stack.push(intValue(val.getBool()));
                             break;
                         }
@@ -1159,7 +1108,7 @@ do { \
                 }
                 case BYTE: {
                     switch (type.getInt()) {
-                        case INTIGER: {
+                        case INTEGER: {
                             stack.push(intValue(val.getByte()));
                             break;
                         }
@@ -1176,7 +1125,7 @@ do { \
                     break;
                 }
                 case POINTER: {
-                    if (type.getInt() == INTIGER) {
+                    if (type.getInt() == INTEGER) {
                         stack.push(intValue(val.getPtr()));
                     } else error("run-time error: pointer objects cannot be converted to anything other than int");
                     break;
@@ -1287,27 +1236,7 @@ do { \
         } else if (OP == OP_PRINT_POP) {
             // standard library: prints to stdout
             TOP();
-            if (top.type == INSTANCE) {
-                auto it = top.members.find("to_string");
-                if (it != top.members.end()) {
-                    if (heap.get(it->second).type == FUNCTION) {
-                        auto fn = heap.fn_get(heap.get(it->second).getFun());
-                        if (fn.args.size() == 0) {
-                            Scope layer;
-                            layer["this"] = top.box_location;
-                            fn.vm.scopes.push_back(layer);
-                            fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
-                            std::cout << fn.vm.run(argc, argv).getStr();
-                            continue;
-                        } else {
-                            error("run-time error: expected 0 arguements for " + top.toString() + "'s to_string implementation");
-                        }
-                    }
-                }
-            }
-
             std::cout << trim(top);
-            
 
         } else if (OP == OP_INDEX) {
             // standard library: indexes object, xyz[]

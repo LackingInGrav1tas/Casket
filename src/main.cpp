@@ -1,14 +1,14 @@
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <string.h>
+
 #include "lexer.hpp"
 #include "vm.hpp"
 #include "parserv2.hpp"
 #include "standard_library.hpp"
 #include "runtime.hpp"
 #include "flags.hpp"
-
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <string.h>
 
 #define DEBUG(stmt) if (flags::debug) stmt
 

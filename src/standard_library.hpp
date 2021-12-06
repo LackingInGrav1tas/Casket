@@ -208,7 +208,7 @@ do { \
         prims.type = INSTANCE;
 
         // setting prim types
-        prims.members["INT"] = heap.add(intValue(INTIGER));
+        prims.members["INT"] = heap.add(intValue(INTEGER));
         prims.members["DOUBLE"] = heap.add(intValue(DOUBLE));
         prims.members["STRING"] = heap.add(intValue(STRING));
         prims.members["BOOLEAN"] = heap.add(intValue(BOOLEAN));

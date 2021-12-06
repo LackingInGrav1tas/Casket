@@ -141,6 +141,21 @@ std::string Value::toString() {
             return final + ")";
         }
         case INSTANCE: {
+            auto it = members.find("to_string");
+            if (it != members.end()) {
+                if (heap.get(it->second).type == FUNCTION) {
+                    auto fn = heap.fn_get(heap.get(it->second).getFun());
+                    if (fn.args.size() == 0) {
+                        Scope layer;
+                        layer["this"] = box_location;
+                        fn.vm.scopes.push_back(layer);
+                        fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
+                        return fn.vm.run(0, (char**)"").toString();
+                    } else {
+                        error("run-time error: expected 0 arguements for to_string implementation");
+                    }
+                }
+            }
             std::string s = "instance{";
             for (auto it = members.begin(); it != members.end(); it++) {
                 s += it->first + "=" + heap.get(it->second).toString() + ", ";

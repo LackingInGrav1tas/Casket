@@ -9,7 +9,7 @@
 typedef std::vector<size_t> Locations;
 
 enum PrimType {
-    INTIGER,
+    INTEGER,
     DOUBLE,
     STRING,
     BOOLEAN,
@@ -41,7 +41,7 @@ enum LibraryCall {
 struct Value {
     union {
         LibraryCall stl_call;
-        int intiger;
+        int integer;
         double doublev;
         bool boolean;
         size_t pointer;
@@ -67,7 +67,7 @@ struct Value {
     }
 
     inline int &getInt() {
-        if (type == INTIGER) return intiger;
+        if (type == INTEGER) return integer;
         else error("expected an int");
     }
     inline double &getDouble() {
@@ -128,7 +128,7 @@ struct Value {
 
 Value intValue(int i) {
     Value v;
-    v.type = INTIGER;
+    v.type = INTEGER;
     v.box_location = -1;
     v.home_location = -1;
     v.getInt() = i;
@@ -225,8 +225,10 @@ Value funValue(size_t fn) {
 }
 
 std::string trim(Value v) {
-    if (v.type == STRING)
-        return v.toString().substr(1, v.toString().length()-2);
+    if (v.type == STRING || v.members.find("to_string") != v.members.end()) {
+        std::string s = v.toString();
+        return s.substr(1, s.length()-2);
+    }
     return v.toString();
 }
 
