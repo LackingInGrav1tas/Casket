@@ -48,7 +48,7 @@ do { \
         // STREAM.IN
         Value stream_in;
         stream_in.type = INSTANCE;
-        // STREAM.IN.READ
+        // STREAM.IN.GET
         ADD_FUNCTION(stream_in, "read", {"$buffer"}, (
             OPS {
                 OpConstant(idenValue("$buffer")),
@@ -73,7 +73,7 @@ do { \
         Value stream_file;
         stream_file.type = INSTANCE;        
         // STREAM.FILE.READ
-        ADD_FUNCTION(stream_file, "read", {"$file"}, (
+        ADD_FUNCTION(stream_file, "get", {"$file"}, (
             OPS {
                 OpConstant(idenValue("$file")),
                 newOpcode(OP_GET_VARIABLE),
@@ -81,8 +81,8 @@ do { \
                 newOpcode(OP_RETURN_POP),
             }
         ));
-        // STREAM.FILE.READ_BYTES
-        ADD_FUNCTION(stream_file, "read_bytes", {"$file"}, (
+        // STREAM.FILE.GET_BYTES
+        ADD_FUNCTION(stream_file, "get_bytes", {"$file"}, (
             OPS {
                 OpConstant(idenValue("$file")),
                 newOpcode(OP_GET_VARIABLE),

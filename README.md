@@ -77,7 +77,7 @@ Pretty much every operator can be overloaded by a class, using the syntax ```ope
 if (true) {
     "some expression";
     "another one";
-} else "brackets aren't needed for one-line blocks";
+} else "brackets aren't needed for one line blocks";
 ```
 ```
 while (true) {
@@ -107,6 +107,20 @@ print a;
 2
 ```
 
+
+Casket has a garbage collector, so this works
+```
+set a;
+{
+    set b = 123456;
+    a = &b;
+}
+Stream.out.print(*a);
+```
+```
+123456
+```
+
 ## Standard Library ##
 
 ### Stream ###
@@ -131,11 +145,11 @@ Handles input/output
 
 #### file ####
 
-```Stream.file.read(filename)```: reads and returns file at path ```filename```.
+```Stream.file.get(filename)```: reads and returns file at path ```filename```.
 
 ```Stream.file.write(filename, data)```: writes ```data``` to file at ```filename```.
 
-```Stream.file.read_bytes(filename)```: reads and returns file at path ```filename``` as a list of bytes.
+```Stream.file.get_bytes(filename)```: reads and returns file at path ```filename``` as a list of bytes.
 
 ```Stream.file.write_bytes(filename, data)```: writes ```data```, which should be a list, to file at ```filename```.
 
