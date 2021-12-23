@@ -12,7 +12,7 @@ do { \
     Function function; \
     function.args = arg_list; \
     function.vm.init_og( opcode ); \
-    body.members[fname] = heap.add(funValue(heap.fn_add(function))); \
+    body.members[fname] = heap.add(funValue(heap.fn_add(function)), 0); \
 } while (0)
     typedef std::vector<OpcodeObject> OPS;
 
@@ -114,10 +114,10 @@ do { \
         // STREAM
         Value stream;
         stream.type = INSTANCE;
-        stream.members["in"]   = heap.add(stream_in);
-        stream.members["out"]  = heap.add(stream_out);
-        stream.members["file"] = heap.add(stream_file);
-        scopes[0]["Stream"] = heap.add(stream);
+        stream.members["in"]   = heap.add(stream_in, 0);
+        stream.members["out"]  = heap.add(stream_out, 0);
+        stream.members["file"] = heap.add(stream_file, 0);
+        scopes[0]["Stream"] = heap.add(stream, 0);
     }
 
     // ENVIRONMENT
@@ -133,7 +133,7 @@ do { \
             }
         ));
 
-        // ENVIRONMENT.ARGS
+        // ENVIRONMENT.EXIT
         ADD_FUNCTION(environment, "exit", {"$val"}, (
             OPS {
                 OpConstant(idenValue("$val")),
@@ -178,7 +178,7 @@ do { \
             }
         ));
 
-        scopes[0]["Environment"] = heap.add(environment);
+        scopes[0]["Environment"] = heap.add(environment, 0);
     }
 
     // DEBUG
@@ -196,7 +196,7 @@ do { \
         // DEBUG.PRINT_HEAP
         // not implemented
 
-        scopes[0]["Debug"] = heap.add(debug);
+        scopes[0]["Debug"] = heap.add(debug, 0);
     }
 
     // TYPES - enum
@@ -208,16 +208,16 @@ do { \
         prims.type = INSTANCE;
 
         // setting prim types
-        prims.members["INT"] = heap.add(intValue(INTEGER));
-        prims.members["DOUBLE"] = heap.add(intValue(DOUBLE));
-        prims.members["STRING"] = heap.add(intValue(STRING));
-        prims.members["BOOLEAN"] = heap.add(intValue(BOOLEAN));
-        prims.members["NULL"] = heap.add(intValue(NIL));
-        prims.members["BYTE"] = heap.add(intValue(BYTE));
-        prims.members["POINTER"] = heap.add(intValue(POINTER));
-        prims.members["LIST"] = heap.add(intValue(LIST));
-        prims.members["FUNCTION"] = heap.add(intValue(FUNCTION));
-        prims.members["INSTANCE"] = heap.add(intValue(INSTANCE));
+        prims.members["INT"] = heap.add(intValue(INTEGER), 0);
+        prims.members["DOUBLE"] = heap.add(intValue(DOUBLE), 0);
+        prims.members["STRING"] = heap.add(intValue(STRING), 0);
+        prims.members["BOOLEAN"] = heap.add(intValue(BOOLEAN), 0);
+        prims.members["NULL"] = heap.add(intValue(NIL), 0);
+        prims.members["BYTE"] = heap.add(intValue(BYTE), 0);
+        prims.members["POINTER"] = heap.add(intValue(POINTER), 0);
+        prims.members["LIST"] = heap.add(intValue(LIST), 0);
+        prims.members["FUNCTION"] = heap.add(intValue(FUNCTION), 0);
+        prims.members["INSTANCE"] = heap.add(intValue(INSTANCE), 0);
 
         // TYPES.IS
         ADD_FUNCTION(types, "is", (std::vector<std::string>{"$val", "$prim"}), (
@@ -253,8 +253,8 @@ do { \
             }
         ));
 
-        types.members["prims"] = heap.add(prims);
-        scopes[0]["Types"] = heap.add(types);
+        types.members["prims"] = heap.add(prims, 0);
+        scopes[0]["Types"] = heap.add(types, 0);
     }
 }
 

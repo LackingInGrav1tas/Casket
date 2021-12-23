@@ -2,7 +2,7 @@
 #define FLAGS_HPP
 
 namespace flags {
-    bool warnings = false;
+    bool warnings = true;
     bool debug = false;
     bool collect = true;
 }

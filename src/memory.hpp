@@ -8,20 +8,43 @@
 #include <map>
 #include <set>
 
-struct GarbageCollector {
-    std::set<size_t> pointers = {};
+struct USE {
+    size_t ptr;
+    int scope;
+    bool b;
+    USE(size_t pointer, int _scope, bool _b) {
+        ptr = pointer;
+        scope = _scope;
+        b = _b;
+    }
+    USE() {}
+    static USE False() {
+        return USE(0, -1, false);
+    }
+};
 
-    void mark(size_t loc) {
-        pointers.insert(loc);
+struct GarbageCollector {
+    std::vector<size_t> pointers = {};
+    std::vector<int> scopes = {};
+
+    void mark(size_t loc, int scope) {
+        pointers.push_back(loc);
+        scopes.push_back(scope);
     }
 
-    bool in_use(size_t loc) {
-        return pointers.find(loc) != pointers.end();
+    USE in_use(size_t loc) {
+        for (int i = 0; i < pointers.size(); i++) {
+            if (pointers[i] == loc) {
+                return USE(i, scopes[i], true);
+            }
+        }
+        return USE::False();
     }
 
     bool remove(size_t loc) {
-        if (in_use(loc)) {
-            pointers.erase(pointers.find(loc));
+        USE u = in_use(loc);
+        if (u.b) {
+            pointers.erase(pointers.begin() + u.ptr);
             return true;
         }
         return false;
@@ -41,9 +64,9 @@ struct VirtualMemory {
         fn_current = 1;
     }
 
-    int add(Value new_value) {
+    int add(Value new_value, int scope) {
         if (new_value.type == POINTER) {
-            gc.mark(new_value.getPtr());
+            gc.mark(new_value.getPtr(), scope);
         }
         memory[current] = new_value;
         memory[current].box_location = current;
@@ -51,20 +74,26 @@ struct VirtualMemory {
         return current-1;
     }
 
-    void change(size_t pos, Value new_value) {
+    void change(size_t pos, Value new_value, int scope) {
         if (new_value.type == POINTER) {
-            gc.mark(new_value.getPtr());
+            gc.mark(new_value.getPtr(), scope);
         }
         memory[pos] = new_value;
         memory[pos].box_location = pos;
     }
 
-    void dump(size_t pos) {
+    void dump(size_t pos, int scope) {
         if (flags::collect) {
-            if (gc.in_use(pos)) return;
+            USE u = gc.in_use(pos);
+            // PRINT("B = " << u.b << " USCOPE = " << u.scope << " SCOPE " << scope);
+            if (u.b && u.scope < scope) {
+                // PRINT("SKIPPING DUMP");
+                return;
+            }
+            // PRINT("DUMPING");
             if (memory[pos].type == POINTER) {
                 if (gc.remove(memory[pos].getPtr())) {
-                    dump(memory[pos].getPtr());
+                    dump(memory[pos].getPtr(), scope);
                 }
             }
         }
@@ -105,8 +134,8 @@ struct VirtualMemory {
 
 std::string Value::toString() {
     switch (type) {
-        case INTIGER:
-            return std::to_string(intiger);
+        case INTEGER:
+            return std::to_string(integer);
         case DOUBLE:
             return std::to_string(doublev);
         case BOOLEAN:
@@ -176,14 +205,14 @@ std::string Value::toString() {
     return "";
 }
 
-Value instanceValue(ClassTemplate tmplt) {
+Value instanceValue(ClassTemplate tmplt, int scope) {
     Value instance;
     instance.type = INSTANCE;
-    int loc = heap.add(instance);
+    int loc = heap.add(instance, scope);
     for (auto it = tmplt.members.begin(); it != tmplt.members.end(); it++) {
         Value v = it->second;
         v.home_location = loc;
-        heap.memory[loc].members[it->first] = heap.add(v);
+        heap.memory[loc].members[it->first] = heap.add(v, scope);
     }
     return heap.memory[loc];
 }

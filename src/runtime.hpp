@@ -44,8 +44,8 @@ do { \
                 if (fn.args.size() == 1) { \
                     Scope layer; \
                     layer["this"] = top.box_location; \
-                    layer["left"] = heap.add(boolValue(left)); \
-                    layer[fn.args[0]] = heap.add(arg); \
+                    layer["left"] = heap.add(boolValue(left), scopes.size()); \
+                    layer[fn.args[0]] = heap.add(arg, scopes.size()); \
                     fn.vm.scopes.push_back(layer); \
                     fn.vm.templates.push_back(std::map<std::string, ClassTemplate>()); \
                     stack.push(fn.vm.run(argc, argv)); \
@@ -103,8 +103,8 @@ do { \
                 if (fn.args.size() == 1) { \
                     Scope layer; \
                     layer["this"] = top.box_location; \
-                    layer["left"] = heap.add(boolValue(left)); \
-                    layer[fn.args[0]] = heap.add(arg); \
+                    layer["left"] = heap.add(boolValue(left), scopes.size()); \
+                    layer[fn.args[0]] = heap.add(arg, scopes.size()); \
                     fn.vm.scopes.push_back(layer); \
                     fn.vm.templates.push_back(std::map<std::string, ClassTemplate>()); \
                     stack.push(fn.vm.run(argc, argv)); \
@@ -150,7 +150,7 @@ do { \
             // stack order: new value (ID comes with op)
             // notation: set var = value
             TOP();
-            scopes.back()[INSTRUCTION.lexeme] = heap.add(top);
+            scopes.back()[INSTRUCTION.lexeme] = heap.add(top, scopes.size());
         } else if (OP == OP_GET_VARIABLE) {
             // retrieving value from variable
             TOP();
@@ -187,12 +187,25 @@ do { \
             // stack order: new value, pointer
             // notation: ptr = new_value
             SIDES();
-            heap.change(lhs.getBoxLoc(), rhs.edit(lhs.getBoxLoc()));
+            bool found = false;
+            int scope = scopes.size()-1;
+            for (; scope >= 0; scope--) {
+                for (auto it = scopes[scope].begin(); it != scopes[scope].end(); it++) {
+                    if (it->second == lhs.getBoxLoc()) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+            if (!found) error("run-time error: cannot edit a non-existent variable");
+            // PRINT("CHANGE S: " << scope);
+            heap.change(lhs.getBoxLoc(), rhs.edit(lhs.getBoxLoc()), scope);
         } else if (OP == OP_REFERENCE) {
             // stack order: identifier
             // notation: &<id-expr>
             TOP();
-            if (top.box_location == -1) stack.push(ptrValue(heap.add(top))); // boxing object
+            if (top.box_location == -1) stack.push(ptrValue(heap.add(top, scopes.size()))); // boxing object
             else stack.push(ptrValue(top.getBoxLoc()));
         } else if (OP == OP_DEREFERENCE) {
             // stack order: ptr
@@ -237,8 +250,8 @@ do { \
                         if (fn.args.size() == 1) {
                             Scope layer;
                             layer["this"] = top.box_location;
-                            layer["left"] = heap.add(boolValue(left));
-                            layer[fn.args[0]] = heap.add(arg);
+                            layer["left"] = heap.add(boolValue(left), scopes.size());
+                            layer[fn.args[0]] = heap.add(arg, scopes.size());
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run(argc, argv));
@@ -296,7 +309,7 @@ do { \
                             if (fn.args.size() == 1) {
                                 Scope layer;
                                 layer["this"] = top.box_location;
-                                layer[fn.args[0]] = heap.add(arg);
+                                layer[fn.args[0]] = heap.add(arg, scopes.size());
                                 fn.vm.scopes.push_back(layer);
                                 fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                                 stack.push(fn.vm.run(argc, argv));
@@ -340,8 +353,8 @@ do { \
                         if (fn.args.size() == 1) {
                             Scope layer;
                             layer["this"] = top.box_location;
-                            layer["left"] = heap.add(boolValue(left));
-                            layer[fn.args[0]] = heap.add(arg);
+                            layer["left"] = heap.add(boolValue(left), scopes.size());
+                            layer[fn.args[0]] = heap.add(arg, scopes.size());
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run(argc, argv));
@@ -397,8 +410,8 @@ do { \
                         if (fn.args.size() == 1) {
                             Scope layer;
                             layer["this"] = top.box_location;
-                            layer["left"] = heap.add(boolValue(left));
-                            layer[fn.args[0]] = heap.add(arg);
+                            layer["left"] = heap.add(boolValue(left), scopes.size());
+                            layer[fn.args[0]] = heap.add(arg, scopes.size());
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run(argc, argv));
@@ -507,7 +520,8 @@ do { \
                                 heap.get(
                                     top.box_location
                                 ).getInt()+1
-                            )
+                            ),
+                            scopes.size()
                         );
                         stack.push(heap.get(top.box_location));
                     } else {
@@ -523,7 +537,7 @@ do { \
                                 heap.get(
                                     top.box_location
                                 ).getDouble()+1
-                            )
+                            ), scopes.size()
                         );
                         stack.push(heap.get(top.box_location));
                     } else {
@@ -539,7 +553,7 @@ do { \
                                 heap.get(
                                     top.box_location
                                 ).getPtr()+1
-                            )
+                            ), scopes.size()
                         );
                         stack.push(heap.get(top.box_location));
                     } else {
@@ -581,7 +595,7 @@ do { \
                                 heap.get(
                                     top.box_location
                                 ).getInt()-1
-                            )
+                            ), scopes.size()
                         );
                         stack.push(heap.get(top.box_location));
                     } else {
@@ -597,7 +611,7 @@ do { \
                                 heap.get(
                                     top.box_location
                                 ).getDouble()-1
-                            )
+                            ), scopes.size()
                         );
                         stack.push(heap.get(top.box_location));
                     } else {
@@ -613,7 +627,7 @@ do { \
                                 heap.get(
                                     top.box_location
                                 ).getPtr()-1
-                            )
+                            ), scopes.size()
                         );
                         stack.push(heap.get(top.box_location));
                     } else {
@@ -686,7 +700,7 @@ do { \
                 }
             }
 
-            stack.push(instanceValue(templt));
+            stack.push(instanceValue(templt, scopes.size()));
 
         } else if (OP == OP_GET_MEMBER) {
             // get field
@@ -756,7 +770,7 @@ do { \
                         }
                     }
                 }
-                std::string message = "run-time error: object has no member " + rhs.getIden() + ". did you mean: [";
+                std::string message = "run-time error: object {" + lhs.toString() + "} has no member " + rhs.getIden() + ". did you mean: [";
                 for (auto it = lhs.members.begin(); it != lhs.members.end(); it++) {
                     message += it->first + ", ";
                 }
@@ -779,7 +793,7 @@ do { \
             auto s = scopes.back();
 
             for (auto it = s.begin(); it != s.end(); it++) { // garbage collection
-                heap.dump(it->second);
+                heap.dump(it->second, scopes.size());
             }
 
             scopes.pop_back();
@@ -861,8 +875,8 @@ do { \
                         }
                         Value prim = stack.top();
                         stack.pop();
-                        prim.getList().insert( prim.getList().begin() + args[0].getInt(), heap.add( args[1] ) );
-                        heap.change(prim.getBoxLoc(), prim);
+                        prim.getList().insert( prim.getList().begin() + args[0].getInt(), heap.add( args[1], scopes.size() ) );
+                        heap.change(prim.getBoxLoc(), prim, scopes.size());
                         break;
                     }
                     case LIST_REMOVE: {
@@ -872,7 +886,7 @@ do { \
                         Value prim = stack.top();
                         stack.pop();
                         prim.getList().erase(prim.getList().begin() + args[0].getInt());
-                        heap.change(prim.getBoxLoc(), prim);
+                        heap.change(prim.getBoxLoc(), prim, scopes.size());
                         break;
                     }
                     case LIST_PUSH: {
@@ -882,9 +896,9 @@ do { \
                         Value prim = stack.top();
                         stack.pop();
                         prim.getList().push_back(
-                            heap.add( args[0] )
+                            heap.add( args[0], scopes.size() )
                         );
-                        heap.change(prim.getBoxLoc(), prim);
+                        heap.change(prim.getBoxLoc(), prim, scopes.size());
                         break;
                     }
                     case LIST_POP: {
@@ -895,7 +909,7 @@ do { \
                         stack.pop();
                         int last = prim.list_locations.back();
                         prim.list_locations.pop_back();
-                        heap.change(prim.getBoxLoc(), prim);
+                        heap.change(prim.getBoxLoc(), prim, scopes.size());
                         stack.push(
                             heap.get(last)
                         );
@@ -917,7 +931,7 @@ do { \
                         Value prim = stack.top();
                         stack.pop();
                         prim.getByte() ^= (-args[1].getBool() ^ prim.getByte()) & (1UL << args[0].getInt());
-                        heap.change(prim.getBoxLoc(), prim);
+                        heap.change(prim.getBoxLoc(), prim, scopes.size());
                         break;
                     }
                     
@@ -933,7 +947,7 @@ do { \
                 f.vm.scopes.push_back(Scope());
                 f.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                 for (int i = 0; i < f.args.size(); i++) {
-                    f.vm.scopes.back()[f.args[i]] = heap.add(args[i]);
+                    f.vm.scopes.back()[f.args[i]] = heap.add(args[i], scopes.size());
                 }
                 if (top.home_location != -1) {
                     f.vm.scopes.back()["this"] = top.home_location;
@@ -1002,7 +1016,7 @@ do { \
             }
             std::reverse(values.begin(), values.end());
             for (int i = 0; i < values.size(); i++) {
-                list.push_back(heap.add(values[i]));
+                list.push_back(heap.add(values[i], scopes.size()));
             }
             stack.push(listValue(list));
 
@@ -1151,7 +1165,7 @@ do { \
             // standard library: returns args
             Value args = listValue({});
             for (int i = 0; i < argc; i++) {
-                args.list_locations.push_back(heap.add(strValue((std::string)argv[i])));
+                args.list_locations.push_back(heap.add(strValue((std::string)argv[i]), scopes.size()));
             }
             stack.push(args);
 
@@ -1165,7 +1179,7 @@ do { \
             for (int i = 0; i < file_buffer.str().length(); i++) {
                 locs.push_back(
                     heap.add(
-                        byteValue(file_buffer.str()[i])
+                        byteValue(file_buffer.str()[i]), scopes.size()
                     )
                 );
             }
@@ -1254,7 +1268,7 @@ do { \
                         if (fn.args.size() == 1) {
                             Scope layer;
                             layer["this"] = lhs.box_location;
-                            layer[fn.args[0]] = heap.add(rhs);
+                            layer[fn.args[0]] = heap.add(rhs, scopes.size());
                             fn.vm.scopes.push_back(layer);
                             fn.vm.templates.push_back(std::map<std::string, ClassTemplate>());
                             stack.push(fn.vm.run(argc, argv));

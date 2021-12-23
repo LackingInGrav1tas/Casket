@@ -20,7 +20,7 @@ int main(int argc, char ** argv) {
     for (int i = 2; i < argc; i++) {
         std::string arg = argv[i];
         if (arg == "warn" || arg == "warnings" || arg == "warning" || arg == "w")
-            flags::warnings = true;
+            flags::warnings = false;
         else if (arg == "d" || arg == "debug")
             flags::debug = true;
         else if (arg == "gc" || arg == "collect")
