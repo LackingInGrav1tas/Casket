@@ -1,0 +1,49 @@
+class Orbital {
+    name: "";
+    limit: 0;
+    value: 0;
+    to_string: fn() {
+        if (this.value == 0) return "";
+        return this.name % this.value;
+    };
+    at_limit: fn() {
+        return this.limit == this.value;
+    };
+}
+
+set orbitals = [
+    new Orbital(name="1s", limit=2, value=0),
+    new Orbital(name="2s", limit=2, value=0),
+    new Orbital(name="2p", limit=6, value=0),
+    new Orbital(name="3s", limit=2, value=0),
+    new Orbital(name="3p", limit=6, value=0),
+    new Orbital(name="4s", limit=2, value=0),
+    new Orbital(name="3d", limit=10, value=0),
+    new Orbital(name="4p", limit=6, value=0),
+    new Orbital(name="5s", limit=2, value=0),
+    new Orbital(name="4d", limit=10, value=0),
+    new Orbital(name="5p", limit=6, value=0),
+    new Orbital(name="6s", limit=2, value=0),
+    new Orbital(name="4f", limit=14, value=0),
+    new Orbital(name="5d", limit=10, value=0),
+    new Orbital(name="6p", limit=6, value=0),
+    new Orbital(name="7s", limit=2, value=0),
+    new Orbital(name="5f", limit=14, value=0),
+    new Orbital(name="6d", limit=10, value=0),
+    new Orbital(name="7p", limit=6, value=0),
+];
+
+set atomic_number = Types.to(Stream.in.input("enter the atomic number "), Types.prims.INT);
+set orbit = 0;
+set current = &(orbitals[orbit]);
+for (set i = 0; i < atomic_number; i++) {
+    (*current).value++;
+    if ((*current).at_limit()) {
+        orbit++;
+        current = &(orbitals[orbit]);
+    }
+}
+
+for (set i = 0; i < orbitals.size(); i++) { // 0
+    Stream.out.print(orbitals[i] % " ");
+}

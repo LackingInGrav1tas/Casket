@@ -1,6 +1,6 @@
 # Casket #
 
-Bytecode interpreter written in C++. Slow and inefficient, made for fun.
+Bytecode interpreter written in C++. Slow and inefficient, made for fun. Example programs can be found in the folder examples.
 
 ## EBNF ##
 ```EBNF
@@ -192,32 +192,3 @@ Gives information about a value's type
 ```Types.is(val, prim)```: returns true if ```val```'s type is ```prim```.
 
 ```Types.get_type(val)```: returns a ```Types.prims``` of ```val```'s type
-
-
-## Example Programs ##
-
-
-
-### Hello World ###
-
-```Stream.out.print("Hello, World");```
-
-
-
-### Stream Cipher ###
-```
-set argv = Environment.args();
-set pfile = argv[2];
-set kfile = argv[3];
-set ofile = argv[4];
-
-set pdata = Stream.file.read_bytes(pfile);
-set kdata = Stream.file.read_bytes(kfile);
-
-set cdata = [];
-for (set i = 0; i < pdata.size(); i++) {
-    cdata.push(pdata[i] ^ kdata[i]);
-}
-
-Stream.file.write_bytes(ofile, cdata);
-```

@@ -1,0 +1,14 @@
+set argv = Environment.args();
+set pfile = argv[2];
+set kfile = argv[3];
+set ofile = argv[4];
+
+set pdata = Stream.file.read_bytes(pfile);
+set kdata = Stream.file.read_bytes(kfile);
+
+set cdata = [];
+for (set i = 0; i < pdata.size(); i++) {
+    cdata.push(pdata[i] ^ kdata[i]);
+}
+
+Stream.file.write_bytes(ofile, cdata);
