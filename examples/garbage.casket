@@ -1,6 +1,0 @@
-set a;
-{
-    set b = 0;
-    a = &b;
-}
-Stream.out.print(*a);
