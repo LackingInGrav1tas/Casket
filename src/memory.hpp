@@ -185,7 +185,7 @@ std::string Value::toString() {
                     }
                 }
             }
-            std::string s = "instance{";
+            std::string s = str + "{";
             for (auto it = members.begin(); it != members.end(); it++) {
                 s += it->first + "=" + heap.get(it->second).toString() + ", ";
             }
@@ -205,8 +205,13 @@ std::string Value::toString() {
     return "";
 }
 
+<<<<<<< Updated upstream
 Value instanceValue(ClassTemplate tmplt, int scope) {
+=======
+Value instanceValue(ClassTemplate tmplt, std::string classname) {
+>>>>>>> Stashed changes
     Value instance;
+    instance.str = classname;
     instance.type = INSTANCE;
     int loc = heap.add(instance, scope);
     for (auto it = tmplt.members.begin(); it != tmplt.members.end(); it++) {
