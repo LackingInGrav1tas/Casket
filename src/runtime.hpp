@@ -676,14 +676,12 @@ do { \
         else if (OP == OP_CREATE_INST) {
             // creates an instance of a class, new Class(a = b...)
             ClassTemplate templt;
-            std::string classname;
             bool found = false;
             for (int s = templates.size()-1; s >= 0; s--) {
                 auto it = templates[s].find(opcode[ip].lexeme);
                 if (it != templates[s].end()) {
                     found = true;
                     templt = it->second;
-                    classname = it->first;
                     break;
                 }
             }
@@ -702,11 +700,7 @@ do { \
                 }
             }
 
-<<<<<<< Updated upstream
             stack.push(instanceValue(templt, scopes.size()));
-=======
-            stack.push(instanceValue(templt, classname));
->>>>>>> Stashed changes
 
         } else if (OP == OP_GET_MEMBER) {
             // get field
