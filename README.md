@@ -1,6 +1,6 @@
 # Casket #
 
-Bytecode interpreter written in C++. Slow and inefficient, made for fun. Example programs can be found in the folder examples.
+Interpreter and bytecode virtual machine written in C++. Example programs can be found in the folder `examples`.
 
 ## EBNF ##
 ```EBNF
